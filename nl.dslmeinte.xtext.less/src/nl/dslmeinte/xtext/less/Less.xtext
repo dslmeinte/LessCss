@@ -9,23 +9,23 @@ LessFile:
 	statements+=Statement*;
 
 Statement:
-	VariableDeclaration | RuleSet | CommentStatement | ImportStatement
+	VariableDefinition | RuleSet | VisibleComment | Import
 	;
 
-VariableDeclaration:
-	'@' name=ID ':' value=ValueExpression ';'
+VariableDefinition:
+	name=VariableDeclaration ':' value=ValueExpression ';'
 	;
 
-CommentStatement:
+VisibleComment:
 	comment=ML_COMMENT
 	;
 
-ImportStatement:
+Import:
 	'@import' importURI=STRING
 	;
 	// TODO  tweak ImportUriGlobalScopeProvider to check on the importURI's extension and behave accordingly
 
-terminal ESCAPED_VALUE: '~' -> ';';
+terminal ESCAPED_VALUE: '~' -> ( ';' | '}' );
 
 terminal JAVASCRIPT_EVAL: '`' -> '`';
 
@@ -36,26 +36,59 @@ terminal JAVASCRIPT_EVAL: '`' -> '`';
 
 
 RuleSet:
-	selector=SelectorExpression
-	('(' ')')?	// TODO  add parametrization
+	selectors+=SelectorExpression (',' selectors+=SelectorExpression)*
+	( '(' ( parameters+=Parameter (',' parameters+=Parameter )* )? ')' )?
 	'{'
-		statements+=Rule (';' statements+=Rule)* ';'?
+		members+=RuleSetMember*
 	'}'
 	;
-	// TODO  add &-combinator to SelectorExpression syntax
 
-Rule:
-	RuleSet | Mixin | PropertyValueExpression
+Parameter:
+	name=VariableDeclaration (':' defaultValue=ValueExpression)?
 	;
 
-Mixin hidden():
+VariableDeclaration hidden():
+	'@' ( name=ID | name='color' )	// add CSS keywords...
+	;
+
+// TODO  1) value converter, 2) use it as a datatype rule...
+VariableName hidden():
+	'@' ( ID | 'color' )
+	;
+
+// TODO  do the same for # and .
+
+// re-def. of PrimarySelectorExpression from CSS to incorporate &-combinator
+PrimarySelectorExpression returns SelectorExpression:
+	  {ToplevelSelectorIndirection} selector=ToplevelSelector
+	| {ParentCombinatorSelector} '&'
+	;
+
+RuleSetMember:
+	RuleSet | MixinCall | PropertyExpression | VariableDefinition
+	;
+
+MixinCall hidden():
 	'.' ruleSet=[RuleSet]
+		( '(' arguments+=ValueExpression (',' arguments+=ValueExpression)* ')' )?
+	';'
 	;
-	// scoping: all top-level Group-s that have a selector expression of the form '.ID'
+	// scoping of ruleSet: all mixin candidates
+	// TODO  WS must be hidden beyond <.ID>
 
-PropertyValueExpression:
-	name=PropertyName ':' values+=ValueExpression+
+PropertyExpression:
+	KnownPropertyExpression | UnknownPropertyExpression
 	;
+
+KnownPropertyExpression:
+	name=KnownProperties ':' values+=ValueExpression+ ';'
+	;
+	// TODO  make ;'s optional (separating, not delimiting)
+
+UnknownPropertyExpression:
+	name=ID ':' values+=ValueExpression+ ';'
+	;
+	// TODO  make ;'s optional (separating, not delimiting)
 
 
 /*
@@ -77,25 +110,49 @@ enum AdditiveOperators:
 	;
 
 MultiplicativeExpression returns ValueExpression:
-	PrimaryValueExpression ({MultiplicativeExpression.left=current} operator=MultiplicativeOperators right=PrimaryValueExpression)*
+	ColorFunctionExpression ({MultiplicativeExpression.left=current} operator=MultiplicativeOperators right=ColorFunctionExpression)*
 	;
 
 enum MultiplicativeOperators:
-	mult='*' | div='/' // | mod='%'
-		// FIXME  causes problems in combination with percentage dimension
+	mult='*' | div='/'
+	;
+	// note that a '%' modulo operator would cause non-LL(*) behavior in combination with the % dimension in (css::)NumberLiteral
+
+ColorFunctionExpression returns ValueExpression:
+	  PrimaryValueExpression
+	| {ColorFunctionCall} function=ColorFunctions '(' color=ValueExpression ',' modifier=NumberLiteral ')'
+	;
+	// TODO  validation
+
+enum ColorFunctions:
+	  lighten | darken
+	| saturate | desaturate
+	| fadein | fadeout
+	| spin
+	| hue | saturation | lightness
 	;
 
 PrimaryValueExpression returns ValueExpression:
 	  '(' ValueExpression ')'
 	| VariableReference
-	| Literal
-	;
-
-Literal:
-	value=ValueLiteral
+	| {ArgumentsReference} '@arguments'
+	| {CSSLiteral}			value=ValueLiteral
+	| {EscapedLiteral}		value=ESCAPED_VALUE
+	| {JavascriptLiteral}	value=JAVASCRIPT_EVAL
 	;
 
 VariableReference hidden():
-	'@' variable=[VariableDeclaration]
+	(indirections+='@')+ variable=[VariableDeclaration]
 	;
+	// indirections counts the number of @'s, at least one
+	// validation:
+	//   e.g., in @@var, the value of @var must be an existing variable
+	// scoping:
+	//   - mimic nesting of rule sets
+	//   - add an implicit @arguments variable...
 
+// re-def. from CSS grammar to make it possible to use expressions:
+ComponentColorLiteral:
+	  {ComponentRGBColor} 'rgb' '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ')'
+	| {ComponentHSLColor} 'hsl' '(' hue=ValueExpression ',' saturation=ValueExpression ',' lightness=ValueExpression ')'
+	;

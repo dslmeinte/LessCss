@@ -14,11 +14,12 @@ import nl.dslmeinte.xtext.less.LessLanguageHelper
 
 class LessScopeProviderImpl extends AbstractDeclarativeScopeProvider {
 
-	def IScope scope_Mixin_ruleSet(LessFile lessFile, EReference ref) {
-		Scopes::scopeFor(lessFile.topLevelClassRuleSets, [ it | it.qName ], IScope::NULLSCOPE)
-	}
-
 	@Inject
 	extension LessLanguageHelper lessLanguageHelper
+
+	// TODO  use my AbstractDeclarateAnnotationBasedScopeProvider here
+	def IScope scope_MixinCall_ruleSet(LessFile lessFile, EReference ref) {
+		Scopes::scopeFor(lessFile.mixinCandidates, [ it | it.qName ], IScope::NULLSCOPE)
+	}
 
 }

@@ -1,4 +1,4 @@
-grammar nl.dslmeinte.xtext.css.CSS with org.eclipse.xtext.common.Terminals
+grammar nl.dslmeinte.xtext.css.CSS with org.eclipse.xtext.common.Terminals hidden(WS, ML_COMMENT)
 
 generate css "http://www.dslmeinte.nl/xtext/css"
 
@@ -9,49 +9,45 @@ import "http://www.eclipse.org/emf/2002/Ecore" as ecore
  * Grammar for CSS3 - to be generated partially from a CSS Definition.
  */
 
-CssFile:
+CSSFile:
 	statements+=Statement*
 	;
 
 // re-definition of ID to allow hyphens:
 terminal ID:
-	'^'? ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
+	('a'..'z'|'A'..'Z'|'_'|'-') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
 	;
 
 Statement:
-	ImportStatement | Group
+	Import | Rule
 	;
 
-ImportStatement:
+Import:
 	'@import' importURI=STRING
 	;
 
-Group:
-	selector=SelectorExpression '{'
-		properties+=PropertyValue (';' statements+=PropertyValue)* ';'?
+Rule:
+	selectors+=SelectorExpression (',' selectors+=SelectorExpression)* '{'
+		propertieValues+=PropertyValue (';' propertieValues+=PropertyValue)* ';'?
 	'}'
 	;
 
 PropertyValue:
-	name=PropertyName ':' values+=ValueLiteral+
+	KnownPropertyValue | UnknownPropertyValue
 	;
 
-PropertyName:
-	KnownPropertyName | UnknownPropertyName
+KnownPropertyValue:
+	name=KnownProperties ':' values+=ValueLiteral+
 	;
 
-KnownPropertyName:
-	name=KnowProperties
+UnknownPropertyValue:
+	name=ID ':' values+=ValueLiteral+
 	;
 
-enum KnowProperties:
+enum KnownProperties:
 	color | border_top='border-top' // | ..
 	;
 	// TODO  generate into this grammar from other DSL...
-
-UnknownPropertyName:
-	name=ID
-	;
 
 
 /*
@@ -97,27 +93,18 @@ PostfixExpression returns SelectorExpression hidden():
 	;
 
 PrimarySelectorExpression returns SelectorExpression:
-	UniversalSelector | TypeSelector | IDSelector | ClassSelector 
+	ToplevelSelector
 	;
 
-UniversalSelector:
-	{UniversalSelector} '*'
-	;
-
-IDSelector hidden():
-	'#' name=ID
-	;
-
-ClassSelector hidden():
-	'.' name=ID
-	;
-
-TypeSelector:
-	type=HtmlElements
+ToplevelSelector:
+	  {UniversalSelector} '*'
+	| {TypeSelector} type=HtmlElements
+	| {IDSelector} '#' name=ID
+	| {ClassSelector} '.' name=ID
 	;
 
 enum HtmlElements:
-	a
+	a | pre | body
 	;
 	// TODO  generate into this grammar from other DSL...
 
@@ -129,18 +116,18 @@ enum HtmlElements:
  */
 
 ValueLiteral:
-	DimensionLiteral | StringLiteral | ColorLiteral | BareWordLiteral
+	NumberLiteral | StringLiteral | ColorLiteral | BareWordLiteral
 	;
 
-DimensionLiteral hidden():
+NumberLiteral hidden():
 	(int=INT | decimal=DECIMAL) dimension=Dimensions?
-		// FIXME  dimension postfix leads to non-LL(*) grammar
 	;
 
-terminal DECIMAL returns ecore::EDouble: ('-')?('0'..'9')+ '.' ('0'..'9')+;
+terminal INT returns ecore::EInt: ('-')? ('0'..'9')+;
+terminal DECIMAL returns ecore::EDouble: ('-')? ('0'..'9')+ '.' ('0'..'9')+;
 
 enum Dimensions:
-	px | pt | perc='%'
+	in | cm | mm | pt | pc | em | ex | px | perc='%'
 	;
 
 StringLiteral:
@@ -150,7 +137,15 @@ StringLiteral:
 ColorLiteral:
 	  {RGBColor} rgb=RGB_COLOR
 	| {NamedColor} color=ColorNames
+	| ComponentColorLiteral
 	;
+
+ComponentColorLiteral:
+	  {ComponentRGBColor} 'rgb' '(' red=NumberLiteral ',' green=NumberLiteral ',' blue=NumberLiteral ')'
+	| {ComponentHSLColor} 'hsl' '(' hue=NumberLiteral ',' saturation=NumberLiteral ',' lightness=NumberLiteral ')'
+	;
+	// validation on ComponentRGBColor:
+	//	either all percentages (with correct range), or all dimension-less integers 0-255
 
 enum ColorNames:
 	black | white // | ...
@@ -159,9 +154,12 @@ enum ColorNames:
 
 terminal RGB_COLOR:
 	'#' ('0'..'9' | 'a'..'f' | 'A'..'F')+;
-	// TODO  provide validation
+	// validation:
 
+// something we don't know about:
 BareWordLiteral:
 	bareWord=ID
 	;
+
+// TODO  UriLiteral
 

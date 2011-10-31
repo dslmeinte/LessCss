@@ -50,7 +50,9 @@ Workflow {
                 fileExtensions = file.extensions
             }
 
-            fragment = parser.antlr.XtextAntlrGeneratorFragment {}
+            fragment = parser.antlr.XtextAntlrGeneratorFragment {
+//            	options = { ignoreCase=true }
+            }
 
             fragment = validation.JavaValidatorFragment {
 //                composedCheck = "org.eclipse.xtext.validation.ImportUriValidator"
@@ -77,7 +79,9 @@ Workflow {
             fragment = outline.QuickOutlineFragment {}
             fragment = quickfix.QuickfixProviderFragment {}
             fragment = contentAssist.JavaBasedContentAssistFragment {}
-            fragment = parser.antlr.XtextAntlrUiGeneratorFragment {}
+            fragment = parser.antlr.XtextAntlrUiGeneratorFragment {
+//            	options = { ignoreCase=true }
+            }
 
             fragment = templates.CodetemplatesGeneratorFragment {}
             fragment = refactoring.RefactorElementNameFragment {}
