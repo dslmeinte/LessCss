@@ -1,20 +1,18 @@
-module nl.dslmeinte.xtext.less.GenerateLess
+module nl.dslmeinte.xtext.css.GenerateCSS
 
 import org.eclipse.emf.mwe.utils.*
 import org.eclipse.xtext.generator.*
 import org.eclipse.xtext.ui.generator.*
 
-var grammarURI = "classpath:/nl/dslmeinte/xtext/less/Less.xtext"
-var file.extensions = "less"
-var projectName = "nl.dslmeinte.xtext.less"
+var grammarURI = "classpath:/nl/dslmeinte/xtext/css/CSS.xtext"
+var file.extensions = "css"
+var projectName = "nl.dslmeinte.xtext.css"
 var runtimeProject = "../${projectName}"
 
 Workflow {
-
     bean = StandaloneSetup {
         scanClassPath = true
         platformUri = "${runtimeProject}/.."
-        registerGenModelFile = "platform:/resource/nl.dslmeinte.xtext.css/src-gen/nl/dslmeinte/xtext/css/CSS.genmodel"
     }
 
     component = DirectoryCleaner {
@@ -37,15 +35,12 @@ Workflow {
             fileExtensions = file.extensions
 
             fragment = grammarAccess.GrammarAccessFragment {}
-            fragment = ecore.EcoreGeneratorFragment {
-            	
-            }
+
+            fragment = ecore.EcoreGeneratorFragment {}
 
             // Serializer 2.0:
             fragment = serializer.SerializerFragment {}
-            // the serialization component (1.0):
-            // fragment = parseTreeConstructor.ParseTreeConstructorFragment {}
-
+            
             fragment = resourceFactory.ResourceFactoryFragment {
                 fileExtensions = file.extensions
             }
@@ -60,26 +55,19 @@ Workflow {
             fragment = scoping.ImportURIScopingFragment {}
             fragment = exporting.SimpleNamesFragment {}
 
-            fragment = builder.BuilderIntegrationFragment {}
-
-            // generator API
-            fragment = generator.GeneratorFragment {
-                generateMwe = false
-                generateJavaMain = true
-            }
-
             fragment = formatting.FormatterFragment {}
 
             fragment = junit.Junit4Fragment {}
 
+            fragment = builder.BuilderIntegrationFragment {}
             fragment = labeling.LabelProviderFragment {}
             fragment = outline.OutlineTreeProviderFragment {}
             fragment = outline.QuickOutlineFragment {}
             fragment = quickfix.QuickfixProviderFragment {}
             fragment = contentAssist.JavaBasedContentAssistFragment {}
             fragment = parser.antlr.XtextAntlrUiGeneratorFragment {}
-
             fragment = templates.CodetemplatesGeneratorFragment {}
+
             fragment = refactoring.RefactorElementNameFragment {}
             fragment = compare.CompareFragment {
                  fileExtensions = file.extensions

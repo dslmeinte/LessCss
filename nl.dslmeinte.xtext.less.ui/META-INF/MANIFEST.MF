@@ -15,8 +15,10 @@ Require-Bundle: nl.dslmeinte.xtext.less;visibility:=reexport,
  org.antlr.runtime,
  org.eclipse.xtext.ui.codetemplates.ui,
  org.eclipse.compare
-Import-Package: org.apache.log4j,
- org.apache.commons.logging
+Import-Package: nl.dslmeinte.xtext.css.services,
+ nl.dslmeinte.xtext.css.ui.contentassist,
+ org.apache.commons.logging,
+ org.apache.log4j
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Export-Package: nl.dslmeinte.xtext.less.ui.contentassist.antlr,
  nl.dslmeinte.xtext.less.ui.internal

@@ -1,0 +1,167 @@
+grammar nl.dslmeinte.xtext.css.CSS with org.eclipse.xtext.common.Terminals
+
+generate css "http://www.dslmeinte.nl/xtext/css"
+
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+
+
+/**
+ * Grammar for CSS3 - to be generated partially from a CSS Definition.
+ */
+
+CssFile:
+	statements+=Statement*
+	;
+
+// re-definition of ID to allow hyphens:
+terminal ID:
+	'^'? ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
+	;
+
+Statement:
+	ImportStatement | Group
+	;
+
+ImportStatement:
+	'@import' importURI=STRING
+	;
+
+Group:
+	selector=SelectorExpression '{'
+		properties+=PropertyValue (';' statements+=PropertyValue)* ';'?
+	'}'
+	;
+
+PropertyValue:
+	name=PropertyName ':' values+=ValueLiteral+
+	;
+
+PropertyName:
+	KnownPropertyName | UnknownPropertyName
+	;
+
+KnownPropertyName:
+	name=KnowProperties
+	;
+
+enum KnowProperties:
+	color | border_top='border-top' // | ..
+	;
+	// TODO  generate into this grammar from other DSL...
+
+UnknownPropertyName:
+	name=ID
+	;
+
+
+/*
+ * +----------------------+
+ * | Selector expressions |
+ * +----------------------+
+ * 
+ * From high to low precedence:
+ * 
+ * - universal, type, ID, class: atomic (primary)
+ * - ID, class: postfix, left-associative
+ * - pseudo-class: postfix, non-associative
+ * - child, adjacent sibling, descendant: infix/binary, left-associative
+ */
+
+SelectorExpression:
+	FamilyExpression
+	;
+
+FamilyExpression returns SelectorExpression:
+	PseudoClassExpression (
+		  {DescendantSelector.left=current}				right=PseudoClassExpression
+		| {ChildSelector.left=current} '>'				right=PseudoClassExpression
+		| {AdjacentSiblingSelector.left=current} '+'	right=PseudoClassExpression
+	)*
+	;
+
+PseudoClassExpression returns SelectorExpression hidden():
+	PostfixExpression ({PseudoClassSelector.operand=current} ':' pseudoClass=PseudoClasses)?
+	;
+
+enum PseudoClasses:
+	  active | after | before
+	| firstChild='first-child' | firstLetter='first-letter' | firstLine='first-line'
+	| focus | hover | lang | link | visited
+	;
+
+PostfixExpression returns SelectorExpression hidden():
+	PrimarySelectorExpression (
+		  {IDSubSelector.parent=current} '#' name=ID
+		| {ClassSubSelector.parent=current} '.' name=ID
+	)*
+	;
+
+PrimarySelectorExpression returns SelectorExpression:
+	UniversalSelector | TypeSelector | IDSelector | ClassSelector 
+	;
+
+UniversalSelector:
+	{UniversalSelector} '*'
+	;
+
+IDSelector hidden():
+	'#' name=ID
+	;
+
+ClassSelector hidden():
+	'.' name=ID
+	;
+
+TypeSelector:
+	type=HtmlElements
+	;
+
+enum HtmlElements:
+	a
+	;
+	// TODO  generate into this grammar from other DSL...
+
+
+/*
+ * +---------------------+
+ * | CSS property values |
+ * +---------------------+
+ */
+
+ValueLiteral:
+	DimensionLiteral | StringLiteral | ColorLiteral | BareWordLiteral
+	;
+
+DimensionLiteral hidden():
+	(int=INT | decimal=DECIMAL) dimension=Dimensions?
+		// FIXME  dimension postfix leads to non-LL(*) grammar
+	;
+
+terminal DECIMAL returns ecore::EDouble: ('-')?('0'..'9')+ '.' ('0'..'9')+;
+
+enum Dimensions:
+	px | pt | perc='%'
+	;
+
+StringLiteral:
+	value=STRING
+	;
+
+ColorLiteral:
+	  {RGBColor} rgb=RGB_COLOR
+	| {NamedColor} color=ColorNames
+	;
+
+enum ColorNames:
+	black | white // | ...
+	;
+	// TODO  generate into this grammar from other DSL
+
+terminal RGB_COLOR:
+	'#' ('0'..'9' | 'a'..'f' | 'A'..'F')+;
+	// TODO  provide validation
+
+BareWordLiteral:
+	bareWord=ID
+	;
+

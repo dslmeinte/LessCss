@@ -1,5 +1,6 @@
 package nl.dslmeinte.xtext.less
 
+import nl.dslmeinte.xtext.css.css.*
 import nl.dslmeinte.xtext.less.less.*
 import org.eclipse.xtext.naming.QualifiedName
 

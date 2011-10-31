@@ -1,4 +1,4 @@
-grammar nl.dslmeinte.xtext.less.Less with org.eclipse.xtext.common.Terminals hidden(WS, SL_COMMENT)
+grammar nl.dslmeinte.xtext.less.Less with nl.dslmeinte.xtext.css.CSS hidden(WS, SL_COMMENT)
 
 import "http://www.eclipse.org/emf/2002/Ecore" as ecore
 
@@ -29,11 +29,6 @@ terminal ESCAPED_VALUE: '~' -> ';';
 
 terminal JAVASCRIPT_EVAL: '`' -> '`';
 
-// re-definition of ID to allow hyphens:
-terminal ID:
-	'^'? ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
-	;
-
 /*
  * For now: interpolate STRINGs during generation but don't support the
  * syntax on a grammar level yet. (TODO)
@@ -47,72 +42,10 @@ RuleSet:
 		statements+=Rule (';' statements+=Rule)* ';'?
 	'}'
 	;
-
-/*
- * +----------------------+
- * | Selector expressions |
- * +----------------------+
- * 
- * From high to low precedence:
- * 
- * - atomic (primary): simple selector
- * - postfix: pseudo-class, ID, class	(latter two are now atomic <-- TODO)
- * - infix: child, adjacent sibling, descendant		(TODO  two different level now: fix)
- */
-
-SelectorExpression:
-	InfixSelectorExpression
-	;
-
-InfixSelectorExpression returns SelectorExpression:
-	PostfixSelectorExpression (
-		  {DescendantSelector.left=current}				right=PostfixSelectorExpression
-		| {ChildSelector.left=current} '>'				right=PostfixSelectorExpression
-		| {AdjacentSiblingSelector.left=current} '+'	right=PostfixSelectorExpression
-	)*
-	;
-
-PostfixSelectorExpression returns SelectorExpression hidden():
-	PrimarySelectorExpression ({PseudoClassSelector.operand=current} ':' pseudoClass=PseudoClasses)?
-	;
-
-enum PseudoClasses:
-	  active | after | before
-	| firstChild='first-child' | firstLetter='first-letter' | firstLine='first-line'
-	| focus | hover | lang | link | visited
-	;
-
-PrimarySelectorExpression returns SelectorExpression:
-	SimpleSelector
-	;
-
-SimpleSelector:
-	UniversalSelector | IDSelector | ClassSelector | TypeSelector
-	;
-
-UniversalSelector:
-	{UniversalSelector} '*'
-	;
-
-IDSelector hidden():
-	'#' name=ID
-	;
-
-ClassSelector hidden():
-	'.' name=ID
-	;
-
-TypeSelector:
-	type=HtmlElements
-	;
-
-enum HtmlElements:
-	a
-	;
-	// TODO  generate into this grammar from other DSL...
+	// TODO  add &-combinator to SelectorExpression syntax
 
 Rule:
-	RuleSet | Mixin | Property
+	RuleSet | Mixin | PropertyValueExpression
 	;
 
 Mixin hidden():
@@ -120,25 +53,8 @@ Mixin hidden():
 	;
 	// scoping: all top-level Group-s that have a selector expression of the form '.ID'
 
-Property:
-	name=PropertyName ':' value=ValueExpression
-	;
-
-PropertyName:
-	KnownPropertyName | UnknownPropertyName
-	;
-
-KnownPropertyName:
-	name=KnowProperties
-	;
-
-enum KnowProperties:
-	color | border_top='border-top' // | ..
-	;
-	// TODO  generate into this grammar from other DSL...
-
-UnknownPropertyName:
-	name=ID
+PropertyValueExpression:
+	name=PropertyName ':' values+=ValueExpression+
 	;
 
 
@@ -149,13 +65,8 @@ UnknownPropertyName:
  */
 
 ValueExpression:
-	JuxtapositionExpression
+	AdditiveExpression
 	;
-
-JuxtapositionExpression returns ValueExpression:
-	AdditiveExpression ({JuxtapositionValueExpression.left=current} right=AdditiveExpression)*
-	;
-	// TODO  fix juxtaposition
 
 AdditiveExpression returns ValueExpression:
 	MultiplicativeExpression ({AdditiveExpression.left=current} operator=AdditiveOperators right=MultiplicativeExpression)*
@@ -170,7 +81,8 @@ MultiplicativeExpression returns ValueExpression:
 	;
 
 enum MultiplicativeOperators:
-	mult='*' | div='/' | mod='%'
+	mult='*' | div='/' // | mod='%'
+		// FIXME  causes problems in combination with percentage dimension
 	;
 
 PrimaryValueExpression returns ValueExpression:
@@ -179,45 +91,11 @@ PrimaryValueExpression returns ValueExpression:
 	| Literal
 	;
 
-VariableReference hidden():
-	'@' variable=[VariableDeclaration]	// TODO  make higher-order as well
-	;
-
 Literal:
-	DimensionLiteral | StringLiteral | ColorLiteral | BareWordLiteral
+	value=ValueLiteral
 	;
 
-DimensionLiteral hidden():
-	(int=INT | decimal=DECIMAL) //dimension=Dimensions?
-		// FIXME  dimension postfix leads to non-LL(*) grammar
-	;
-
-terminal DECIMAL returns ecore::EDouble: ('-')?('0'..'9')+ '.' ('0'..'9')+;
-
-
-enum Dimensions:
-	px | pt | perc='%'
-	;
-
-StringLiteral:
-	value=STRING
-	;
-
-ColorLiteral:
-	  {RGBColor} rgb=RGB_COLOR
-	| {NamedColor} color=ColorNames
-	;
-
-enum ColorNames:
-	black | white // | ...
-	;
-	// TODO  generate into this grammar from other DSL
-
-terminal RGB_COLOR:
-	'#' ('0'..'9' | 'a'..'f' | 'A'..'F')+;
-	// TODO  provide validation
-
-BareWordLiteral:
-	bareWord=ID
+VariableReference hidden():
+	'@' variable=[VariableDeclaration]
 	;
 
