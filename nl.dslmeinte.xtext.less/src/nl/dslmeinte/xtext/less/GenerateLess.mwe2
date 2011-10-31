@@ -1,0 +1,88 @@
+module nl.dslmeinte.xtext.less.GenerateLess
+
+import org.eclipse.emf.mwe.utils.*
+import org.eclipse.xtext.generator.*
+import org.eclipse.xtext.ui.generator.*
+
+var grammarURI = "classpath:/nl/dslmeinte/xtext/less/Less.xtext"
+var file.extensions = "less"
+var projectName = "nl.dslmeinte.xtext.less"
+var runtimeProject = "../${projectName}"
+
+Workflow {
+
+    bean = StandaloneSetup {
+        scanClassPath = true
+        platformUri = "${runtimeProject}/.."
+    }
+
+    component = DirectoryCleaner {
+        directory = "${runtimeProject}/src-gen"
+    }
+
+    component = DirectoryCleaner {
+        directory = "${runtimeProject}.ui/src-gen"
+    }
+
+    component = Generator {
+        pathRtProject = runtimeProject
+        pathUiProject = "${runtimeProject}.ui"
+        pathTestProject = "${runtimeProject}.tests"
+        projectNameRt = projectName
+        projectNameUi = "${projectName}.ui"
+        language = {
+            uri = grammarURI
+            fileExtensions = file.extensions
+
+            fragment = grammarAccess.GrammarAccessFragment {}
+            fragment = ecore.EcoreGeneratorFragment {}
+
+            // Serializer 2.0:
+            fragment = serializer.SerializerFragment {}
+            // the serialization component (1.0):
+            // fragment = parseTreeConstructor.ParseTreeConstructorFragment {}
+
+            fragment = resourceFactory.ResourceFactoryFragment {
+                fileExtensions = file.extensions
+            }
+
+            fragment = parser.antlr.XtextAntlrGeneratorFragment {}
+
+            fragment = validation.JavaValidatorFragment {
+//                composedCheck = "org.eclipse.xtext.validation.ImportUriValidator"
+//                composedCheck = "org.eclipse.xtext.validation.NamesAreUniqueValidator"
+            }
+
+            fragment = scoping.ImportURIScopingFragment {}
+            fragment = exporting.SimpleNamesFragment {}
+
+            fragment = builder.BuilderIntegrationFragment {}
+
+            // generator API
+            fragment = generator.GeneratorFragment {
+                generateMwe = false
+                generateJavaMain = true
+            }
+
+            fragment = formatting.FormatterFragment {}
+            fragment = labeling.LabelProviderFragment {}
+
+            fragment = outline.OutlineTreeProviderFragment {}
+            fragment = outline.QuickOutlineFragment {}
+            fragment = quickfix.QuickfixProviderFragment {}
+            fragment = contentAssist.JavaBasedContentAssistFragment {}
+            fragment = parser.antlr.XtextAntlrUiGeneratorFragment {}
+
+            // generates junit test support classes into Generator#pathTestProject
+            fragment = junit.Junit4Fragment {}
+
+            fragment = templates.CodetemplatesGeneratorFragment {}
+            fragment = refactoring.RefactorElementNameFragment {}
+            fragment = compare.CompareFragment {
+                 fileExtensions = file.extensions
+            }
+
+        }
+    }
+
+}
