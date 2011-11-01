@@ -1,0 +1,22 @@
+Two Eclipse plug-ins which provide editors for CSS3 and Less (http://lesscss.org/).
+
+Requirements (i.e., developed on, not tested on anything else):
+ - Eclipse 3.7 (build ID: I20110613-1736)
+ - Xtext 2.0.1 (SR1) with ANTLR stuff
+
+Note that these are very much a work-in-progress. I aim to provide full implementations
+for CSS3 and Less. Most work is in the CSS part as Less extends CSS but not by much...
+which isn't to say those extensions aren't really useful - they are! In the end, I
+also intend to implement the mapping of Less -> CSS. This is not particularly difficult,
+just tedious in the face of all the details of CSS.
+
+Currently, the CSS3 plug-in doesn't really know all that much about CSS3 beyond some
+core syntax, so don't expect it to know about specific HTML elements/types and CSS
+properties, m'kay? By extension, the same goes for Less. I hope the syntax checking,
+highlighting and minimal validation already provides some convenience.
+
+If you're interested in helping to further develop this, fork at will. I have some specific
+ideas on how to go from here, so don't expect me to always accept a pull request.
+
+License: a MIT-style "hopefully this is useful for someone" one.
+
