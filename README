@@ -4,6 +4,10 @@ Requirements (i.e., developed on, not tested on anything else):
  - Eclipse 3.7 (build ID: I20110613-1736)
  - Xtext 2.0.1 (SR1) with ANTLR stuff
 
+You'll find a ZIP with the Eclipse plug-in JARs in the Downloads section. Drop the
+JARs into the 'dropins' (or 'plugins', if that doesn't work) directory in your
+Eclipse installation directory and (re-)start your Eclipse.
+
 Note that these are very much a work-in-progress. I aim to provide full implementations
 for CSS3 and Less. Most work is in the CSS part as Less extends CSS but not by much...
 which isn't to say those extensions aren't really useful - they are! In the end, I
@@ -16,7 +20,22 @@ properties, m'kay? By extension, the same goes for Less. I hope the syntax check
 highlighting and minimal validation already provides some convenience.
 
 If you're interested in helping to further develop this, fork at will. I have some specific
-ideas on how to go from here, so don't expect me to always accept a pull request.
+ideas on how to go from here, so don't expect me to always accept a pull request verbatim.
+To give an idea, here's a rough TODO list:
+
+- full compliance with CSS3 lexical scanning
+- full implementation of CSS3 validation (e.g., validating RGB literals)
+- full implementation of CSS3 selector syntax
+- full implementation of CSS3 property syntax, using single-shot DSL and generation of part of the grammar
+- full implementation of remaining CSS3 stuff, e.g. namespaces, URI literals
+- type system implementation for Less
+- implementation of Less imports
+- nicer syntax highlighting for both CSS and Less
+- nice formatting for CSS (and Less)
+- migration to Xtext 2.1 (after release)
+- evaluation engine for Less (expressions)
+- mapping of Less -> CSS (model-2-model transformation)
+- builder integration of Less -> CSS, using serialization
 
 License: a MIT-style "hopefully this is useful for someone" one.
 
