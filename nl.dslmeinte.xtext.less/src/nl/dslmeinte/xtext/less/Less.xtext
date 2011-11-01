@@ -150,7 +150,7 @@ ComponentColorLiteral:
  * +-----------+
  */
 
-terminal AT_ID: '@' PREFIXED_ID_START ID_PART* ;
+terminal AT_ID: '@' PREFIXABLE_ID_START ID_PART* ;
 	// LessValueConverterService#AT_ID takes care of removing the @
 
 terminal ESCAPED_VALUE: '~' -> ( ';' | '}' ) ;

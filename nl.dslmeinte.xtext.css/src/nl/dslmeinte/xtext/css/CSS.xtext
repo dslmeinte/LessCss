@@ -205,11 +205,11 @@ terminal RGB_COLOR: '#' HEX_DIGIT+ ;
 terminal ID: ID_START ID_PART* ;
 
 // special terminal for ID..euhmm..id's:
-terminal HASH_ID: '#' PREFIXED_ID_START ID_PART* ;
+terminal HASH_ID: '#' PREFIXABLE_ID_START ID_PART* ;
 	// CSSValueConverterService#HASH_ID takes care of removing the '#'
 
 // special terminal for class id's:
-terminal DOT_ID: '.' PREFIXED_ID_START ID_PART* ;
+terminal DOT_ID: '.' PREFIXABLE_ID_START ID_PART* ;
 	// CSSValueConverterService#DOT_ID takes care of removing the '.'
 
 terminal INT returns ecore::EInt: ('-')? DEC_DIGIT+ ;
@@ -222,7 +222,7 @@ terminal fragment DEC_DIGIT: '0'..'9' ;
 
 terminal fragment ID_PART: ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9') ;
 
-terminal fragment ID_START: PREFIXED_ID_START | '-';
+terminal fragment ID_START: PREFIXABLE_ID_START | '-';
 
-terminal fragment PREFIXED_ID_START: ('a'..'z'|'A'..'Z'|'_') ;
+terminal fragment PREFIXABLE_ID_START: ('a'..'z'|'A'..'Z'|'_') ;
 
