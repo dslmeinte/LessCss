@@ -30,7 +30,9 @@ Import:
 
 Rule:
 	selectors+=SelectorExpression (',' selectors+=SelectorExpression)* '{'
-		propertyValues+=PropertyValue (';' propertyValues+=PropertyValue)* ';'?
+		(
+			propertyValues+=PropertyValue (';' propertyValues+=PropertyValue)* ';'?
+		)?
 	'}'
 	;
 
