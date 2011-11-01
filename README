@@ -23,6 +23,7 @@ If you're interested in helping to further develop this, fork at will. I have so
 ideas on how to go from here, so don't expect me to always accept a pull request verbatim.
 To give an idea, here's a rough TODO list:
 
+- having unit tests would be a good idea ;-)
 - full compliance with CSS3 lexical scanning
 - full implementation of CSS3 validation (e.g., validating RGB literals)
 - full implementation of CSS3 selector syntax
