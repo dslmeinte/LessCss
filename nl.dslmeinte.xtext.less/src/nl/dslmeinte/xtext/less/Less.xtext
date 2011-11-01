@@ -32,17 +32,13 @@ RuleSet:
 	selectors+=SelectorExpression (',' selectors+=SelectorExpression)*
 	( '(' ( parameters+=Parameter (',' parameters+=Parameter )* )? ')' )?
 	'{'
-		(members+=RuleSetMember | ';')*
+		(members+=RuleSetMemberSemiColonDelimited ';' | members+=RuleSet)*
+//		(members+=RuleSetMemberSemiColonDelimited)?
 	'}'
 	;
 	/*
-	 * Note that semi-colons are essentially optional, as long as the parser
-	 * can distinguish between a juxtaposed set of value expressions, a mixin
-	 * call and a new rule set with the selector beginning with a class selector.
-	 * 
-	 * (I don't know how less.js goes about this, so this seems
-	 * both the easiest and most lenient approach, currently.
-	 * It does cause a bit of ambiguity, though...)
+	 * Note that semi-colons are now required everywhere.
+	 * (Uncommenting the commented-out line leads to non-LL(*) behavior.)
 	 */
 
 Parameter:
@@ -55,8 +51,12 @@ PrimarySelectorExpression returns SelectorExpression:
 	| {ParentCombinatorSelector} '&'
 	;
 
-RuleSetMember:
-	RuleSet | MixinCall | PropertyExpression | VariableDefinition
+RuleSetMember:	// convenience super type
+	RuleSet | RuleSetMemberSemiColonDelimited
+	;
+
+RuleSetMemberSemiColonDelimited:
+	MixinCall | PropertyExpression | VariableDefinition
 	;
 
 MixinCall:
