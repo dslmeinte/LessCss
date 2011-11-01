@@ -191,28 +191,36 @@ BareWordLiteral:
  * +-----------+
  */
 
+terminal RGB_COLOR: '#' HEX_DIGIT+ ;
+	// validation: exactly 3 or 6 hex-digits
+	// CSSValueConverterService#RGB_COLOR takes care of removing the '#' and validation
+	/*
+	 * Note that this terminal rule must come before the HASH_ID one,
+	 * since the latter subsumes the first.
+	 */
+
 // re-definition of ID to allow hyphens:
-terminal ID:
-	('a'..'z'|'A'..'Z'|'_'|'-') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
-	;
+terminal ID: ID_START ID_PART* ;
 
 // special terminal for ID..euhmm..id's:
-terminal HASH_ID:
-	'#' ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
-	;
+terminal HASH_ID: '#' PREFIXED_ID_START ID_PART* ;
 	// CSSValueConverterService#HASH_ID takes care of removing the '#'
 
 // special terminal for class id's:
-terminal DOT_ID:
-	'.' ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
-	;
+terminal DOT_ID: '.' PREFIXED_ID_START ID_PART* ;
 	// CSSValueConverterService#DOT_ID takes care of removing the '.'
 
-terminal RGB_COLOR:
-	'#' ('0'..'9' | 'a'..'f' | 'A'..'F')+;
-	// TODO  validation
+terminal INT returns ecore::EInt: ('-')? DEC_DIGIT+ ;
 
-terminal INT returns ecore::EInt: ('-')? ('0'..'9')+;
+terminal DECIMAL returns ecore::EDouble: ('-')? DEC_DIGIT+ '.' DEC_DIGIT+ ;
 
-terminal DECIMAL returns ecore::EDouble: ('-')? ('0'..'9')+ '.' ('0'..'9')+;
+terminal fragment HEX_DIGIT: '0'..'9' | 'a'..'f' | 'A'..'F' ;
+
+terminal fragment DEC_DIGIT: '0'..'9' ;
+
+terminal fragment ID_PART: ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9') ;
+
+terminal fragment ID_START: PREFIXED_ID_START | '-';
+
+terminal fragment PREFIXED_ID_START: ('a'..'z'|'A'..'Z'|'_') ;
 

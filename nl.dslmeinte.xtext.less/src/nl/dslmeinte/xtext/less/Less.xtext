@@ -132,7 +132,7 @@ VariableReference:
 	;
 	// (.indirections counts the level of indirection)
 	// validation:
-	//   e.g., in @@var, the value of @var must be an existing variable
+	//   e.g., in @@var, the value of @var must be the (@-less) name of an existing variable
 	// scoping:
 	//   - mimic nesting of rule sets
 
@@ -149,14 +149,12 @@ ComponentColorLiteral:
  * +-----------+
  */
 
-terminal AT_ID:
-	'@' ('a'..'z'|'A'..'Z') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
-	;
+terminal AT_ID: '@' PREFIXED_ID_START ID_PART* ;
 	// LessValueConverterService#AT_ID takes care of removing the @
 
-terminal ESCAPED_VALUE: '~' -> ( ';' | '}' );
+terminal ESCAPED_VALUE: '~' -> ( ';' | '}' ) ;
 
-terminal JAVASCRIPT_EVAL: '`' -> '`';
+terminal JAVASCRIPT_EVAL: '`' -> '`' ;
 
 /*
  * For now: interpolate STRINGs during generation but don't support the
