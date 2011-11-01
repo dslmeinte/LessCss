@@ -1,19 +1,17 @@
 grammar nl.dslmeinte.xtext.less.Less with nl.dslmeinte.xtext.css.CSS hidden(WS, SL_COMMENT)
 
-import "http://www.eclipse.org/emf/2002/Ecore" as ecore
-
-generate less "http://www.dslmeinte.nl/xtext/less/Less"
+generate less "http://www.dslmeinte.nl/xtext/less"
 
 
 LessFile:
 	statements+=Statement*;
 
 Statement:
-	VariableDefinition | RuleSet | VisibleComment | Import
+	(VariableDefinition ';') | RuleSet | VisibleComment | Import
 	;
 
 VariableDefinition:
-	name=VariableDeclaration ':' value=ValueExpression ';'
+	name=VariableDeclaration ':' value=ValueExpression
 	;
 
 VisibleComment:
@@ -25,42 +23,34 @@ Import:
 	;
 	// TODO  tweak ImportUriGlobalScopeProvider to check on the importURI's extension and behave accordingly
 
-terminal ESCAPED_VALUE: '~' -> ( ';' | '}' );
-
-terminal JAVASCRIPT_EVAL: '`' -> '`';
-
-/*
- * For now: interpolate STRINGs during generation but don't support the
- * syntax on a grammar level yet. (TODO)
- */
-
 
 RuleSet:
 	selectors+=SelectorExpression (',' selectors+=SelectorExpression)*
 	( '(' ( parameters+=Parameter (',' parameters+=Parameter )* )? ')' )?
 	'{'
-		members+=RuleSetMember*
+		(members+=RuleSetMember | ';')*
 	'}'
 	;
+	/*
+	 * Note that semi-colons are essentially optional, as long as the parser
+	 * can distinguish between a juxtaposed set of value expressions, a mixin
+	 * call and a new rule set with the selector beginning with a class selector.
+	 * 
+	 * (I don't know how less.js goes about this, so this seems
+	 * both the easiest and most lenient approach, currently.)
+	 */
 
 Parameter:
-	name=VariableDeclaration (':' defaultValue=ValueExpression)?
+	var=VariableDeclaration (':' defaultValue=ValueExpression)?
 	;
 
-VariableDeclaration hidden():
-	'@' ( name=ID | name='color' )	// add CSS keywords...
+VariableDeclaration:
+	name=AT_ID
 	;
-
-// TODO  1) value converter, 2) use it as a datatype rule...
-VariableName hidden():
-	'@' ( ID | 'color' )
-	;
-
-// TODO  do the same for # and .
 
 // re-def. of PrimarySelectorExpression from CSS to incorporate &-combinator
 PrimarySelectorExpression returns SelectorExpression:
-	  {ToplevelSelectorIndirection} selector=ToplevelSelector
+	  {SimpleSelectorIndirection} selector=SimpleSelector
 	| {ParentCombinatorSelector} '&'
 	;
 
@@ -68,27 +58,23 @@ RuleSetMember:
 	RuleSet | MixinCall | PropertyExpression | VariableDefinition
 	;
 
-MixinCall hidden():
-	'.' ruleSet=[RuleSet]
+MixinCall:
+	ruleSet=[RuleSet|DOT_ID]
 		( '(' arguments+=ValueExpression (',' arguments+=ValueExpression)* ')' )?
-	';'
 	;
 	// scoping of ruleSet: all mixin candidates
-	// TODO  WS must be hidden beyond <.ID>
 
 PropertyExpression:
 	KnownPropertyExpression | UnknownPropertyExpression
 	;
 
 KnownPropertyExpression:
-	name=KnownProperties ':' values+=ValueExpression+ ';'
+	name=KnownProperties ':' values+=ValueExpression+
 	;
-	// TODO  make ;'s optional (separating, not delimiting)
 
 UnknownPropertyExpression:
-	name=ID ':' values+=ValueExpression+ ';'
+	name=ID ':' values+=ValueExpression+
 	;
-	// TODO  make ;'s optional (separating, not delimiting)
 
 
 /*
@@ -141,18 +127,39 @@ PrimaryValueExpression returns ValueExpression:
 	| {JavascriptLiteral}	value=JAVASCRIPT_EVAL
 	;
 
-VariableReference hidden():
-	(indirections+='@')+ variable=[VariableDeclaration]
+VariableReference:
+	(indirections+='@')* variable=[VariableDeclaration|AT_ID]
 	;
-	// indirections counts the number of @'s, at least one
+	// (.indirections counts the level of indirection)
 	// validation:
 	//   e.g., in @@var, the value of @var must be an existing variable
 	// scoping:
 	//   - mimic nesting of rule sets
-	//   - add an implicit @arguments variable...
 
 // re-def. from CSS grammar to make it possible to use expressions:
 ComponentColorLiteral:
 	  {ComponentRGBColor} 'rgb' '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ')'
 	| {ComponentHSLColor} 'hsl' '(' hue=ValueExpression ',' saturation=ValueExpression ',' lightness=ValueExpression ')'
 	;
+
+
+/*
+ * +-----------+
+ * | Terminals |
+ * +-----------+
+ */
+
+terminal AT_ID:
+	'@' ('a'..'z'|'A'..'Z') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
+	;
+	// LessValueConverterService#AT_ID takes care of removing the @
+
+terminal ESCAPED_VALUE: '~' -> ( ';' | '}' );
+
+terminal JAVASCRIPT_EVAL: '`' -> '`';
+
+/*
+ * For now: interpolate STRINGs during generation but don't support the
+ * syntax on a grammar level yet - which would require a custom lexer... (TODO)
+ */
+

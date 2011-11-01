@@ -5,7 +5,7 @@
 
   <extension point="org.eclipse.emf.ecore.generated_package">
     <package 
-       uri = "http://www.dslmeinte.nl/xtext/less/Less" 
+       uri = "http://www.dslmeinte.nl/xtext/less" 
        class = "nl.dslmeinte.xtext.less.less.LessPackage"
        genModel = "nl/dslmeinte/xtext/less/Less.genmodel" /> 
 	

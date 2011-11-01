@@ -7,15 +7,17 @@ import "http://www.eclipse.org/emf/2002/Ecore" as ecore
 
 /**
  * Grammar for CSS3 - to be generated partially from a CSS Definition.
+ * 
+ * The specification of the CSS3 language can be found from: http://www.w3.org/TR/CSS/
+ * 
+ * This implementation does not completely comply with the W3C specification, since
+ * it's a work-in-progress. Notable global aspects that are missing:
+ * 	- case-insensitivity
+ * 	- complete compliance with respect to lexical scanning (tokenization)
  */
 
 CSSFile:
 	statements+=Statement*
-	;
-
-// re-definition of ID to allow hyphens:
-terminal ID:
-	('a'..'z'|'A'..'Z'|'_'|'-') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
 	;
 
 Statement:
@@ -28,7 +30,7 @@ Import:
 
 Rule:
 	selectors+=SelectorExpression (',' selectors+=SelectorExpression)* '{'
-		propertieValues+=PropertyValue (';' propertieValues+=PropertyValue)* ';'?
+		propertyValues+=PropertyValue (';' propertyValues+=PropertyValue)* ';'?
 	'}'
 	;
 
@@ -55,28 +57,34 @@ enum KnownProperties:
  * | Selector expressions |
  * +----------------------+
  * 
+ * Specification: http://www.w3.org/TR/css3-selectors
+ * Note that this implementation is not yet complete!
+ * 
  * From high to low precedence:
  * 
  * - universal, type, ID, class: atomic (primary)
  * - ID, class: postfix, left-associative
+ * - attribute selectors: simple, value (5 variants), language; postfix, left-associative
  * - pseudo-class: postfix, non-associative
  * - child, adjacent sibling, descendant: infix/binary, left-associative
  */
 
 SelectorExpression:
-	FamilyExpression
+	CombinatorExpression
 	;
 
-FamilyExpression returns SelectorExpression:
+CombinatorExpression returns SelectorExpression hidden():
 	PseudoClassExpression (
-		  {DescendantSelector.left=current}				right=PseudoClassExpression
-		| {ChildSelector.left=current} '>'				right=PseudoClassExpression
-		| {AdjacentSiblingSelector.left=current} '+'	right=PseudoClassExpression
+		  {DescendantCombinator.left=current}		ws=WS					right=PseudoClassExpression
+		| {ChildCombinator.left=current}			wsL=WS? '>' wsR=WS?		right=PseudoClassExpression
+		| {AdjacentSiblingCombinator.left=current}	wsL=WS? '+' wsR=WS?		right=PseudoClassExpression
+		| {GeneralSiblingCombinator.left=current}	wsL=WS? '~' wsR=WS?		right=PseudoClassExpression
 	)*
 	;
+	// The scanned whitespace needs to be assigned, otherwise we can't re-serialize reliably.
 
 PseudoClassExpression returns SelectorExpression hidden():
-	PostfixExpression ({PseudoClassSelector.operand=current} ':' pseudoClass=PseudoClasses)?
+	AttributeSelectorExpression ({PseudoClassSelector.operand=current} ':' pseudoClass=PseudoClasses)?
 	;
 
 enum PseudoClasses:
@@ -85,22 +93,42 @@ enum PseudoClasses:
 	| focus | hover | lang | link | visited
 	;
 
-PostfixExpression returns SelectorExpression hidden():
+AttributeSelectorExpression returns SelectorExpression hidden():
+	SubSelectorExpression (
+		'['
+			(
+				  {SimpleAttributeSelector.operand=current}		attributeName=ID
+				| {AttributeValueSelector.operand=current}		attributeName=ID operator=AttributeValueComparators value=STRING
+				| {LanguageAttributeSelector.operand=current}	attributeName=ID '|=' languageName=STRING 
+			)
+		 ']'
+	)*
+	;
+
+enum AttributeValueComparators:
+	  exact='='
+	| partial='~='
+	| beginningSubstring='^='
+	| endingSubstring='$='
+	| arbitrarySubstring='*='
+	;
+
+SubSelectorExpression returns SelectorExpression hidden():
 	PrimarySelectorExpression (
-		  {IDSubSelector.parent=current} '#' name=ID
-		| {ClassSubSelector.parent=current} '.' name=ID
+		  {IDSubSelector.parent=current}	name=HASH_ID
+		| {ClassSubSelector.parent=current}	name=DOT_ID
 	)*
 	;
 
 PrimarySelectorExpression returns SelectorExpression:
-	ToplevelSelector
+	SimpleSelector
 	;
 
-ToplevelSelector:
+SimpleSelector:
 	  {UniversalSelector} '*'
-	| {TypeSelector} type=HtmlElements
-	| {IDSelector} '#' name=ID
-	| {ClassSelector} '.' name=ID
+	| {TypeSelector}	( knownType=HtmlElements | unknownType=ID )
+	| {IDSelector}		name=HASH_ID
+	| {ClassSelector}	name=DOT_ID
 	;
 
 enum HtmlElements:
@@ -122,9 +150,6 @@ ValueLiteral:
 NumberLiteral hidden():
 	(int=INT | decimal=DECIMAL) dimension=Dimensions?
 	;
-
-terminal INT returns ecore::EInt: ('-')? ('0'..'9')+;
-terminal DECIMAL returns ecore::EDouble: ('-')? ('0'..'9')+ '.' ('0'..'9')+;
 
 enum Dimensions:
 	in | cm | mm | pt | pc | em | ex | px | perc='%'
@@ -152,14 +177,42 @@ enum ColorNames:
 	;
 	// TODO  generate into this grammar from other DSL
 
-terminal RGB_COLOR:
-	'#' ('0'..'9' | 'a'..'f' | 'A'..'F')+;
-	// validation:
-
 // something we don't know about:
 BareWordLiteral:
 	bareWord=ID
 	;
 
 // TODO  UriLiteral
+
+
+/*
+ * +-----------+
+ * | Terminals |
+ * +-----------+
+ */
+
+// re-definition of ID to allow hyphens:
+terminal ID:
+	('a'..'z'|'A'..'Z'|'_'|'-') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
+	;
+
+// special terminal for ID..euhmm..id's:
+terminal HASH_ID:
+	'#' ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
+	;
+	// CSSValueConverterService#HASH_ID takes care of removing the '#'
+
+// special terminal for class id's:
+terminal DOT_ID:
+	'.' ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9')*
+	;
+	// CSSValueConverterService#DOT_ID takes care of removing the '.'
+
+terminal RGB_COLOR:
+	'#' ('0'..'9' | 'a'..'f' | 'A'..'F')+;
+	// TODO  validation
+
+terminal INT returns ecore::EInt: ('-')? ('0'..'9')+;
+
+terminal DECIMAL returns ecore::EDouble: ('-')? ('0'..'9')+ '.' ('0'..'9')+;
 

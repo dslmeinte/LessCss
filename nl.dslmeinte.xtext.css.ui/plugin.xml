@@ -139,13 +139,6 @@
 
 
 
-   <extension
-         point="org.eclipse.xtext.builder.participant">
-      <participant
-            class="nl.dslmeinte.xtext.css.ui.CSSExecutableExtensionFactory:org.eclipse.xtext.builder.IXtextBuilderParticipant">
-      </participant>
-   </extension>
-
 	<!-- Quick Outline -->
 	<extension
 		point="org.eclipse.ui.handlers">
@@ -186,7 +179,6 @@
             class="nl.dslmeinte.xtext.css.ui.CSSExecutableExtensionFactory:org.eclipse.xtext.ui.editor.quickfix.MarkerResolutionGenerator">
       </markerResolutionGenerator>
    </extension>
-
    	<!-- Rename Refactoring -->
 	<extension point="org.eclipse.ui.handlers">
 		<handler 

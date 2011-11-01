@@ -38,9 +38,8 @@ Workflow {
 
             fragment = ecore.EcoreGeneratorFragment {}
 
-            // Serializer 2.0:
             fragment = serializer.SerializerFragment {}
-            
+
             fragment = resourceFactory.ResourceFactoryFragment {
                 fileExtensions = file.extensions
             }

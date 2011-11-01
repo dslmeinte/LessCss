@@ -8,20 +8,16 @@ import org.eclipse.xtext.naming.QualifiedName
 import nl.dslmeinte.xtext.css.css.ClassSelector
 import nl.dslmeinte.xtext.less.less.LessFile
 import nl.dslmeinte.xtext.less.less.RuleSet
-import nl.dslmeinte.xtext.less.less.ToplevelSelectorIndirection
+import nl.dslmeinte.xtext.less.less.SimpleSelectorIndirection
 
 class LessLanguageHelper {
 
 	def mixinCandidates(LessFile lessFile) {
-		val candidates = lessFile.statements.filter(typeof(RuleSet)).filter([RuleSet rs|rs.canBeMixin])
-		println(candidates.map([rs|rs.qName]))
-		candidates
+		lessFile.statements.filter(typeof(RuleSet)).filter([RuleSet rs|rs.canBeMixin])
 	}
 
 	def canBeMixin(RuleSet ruleSet) {
-		   ruleSet.selectors.size == 1
-		&& ruleSet.selectors.head instanceof ToplevelSelectorIndirection
-		&& (ruleSet.selectors.head as ToplevelSelectorIndirection).selector instanceof ClassSelector
+		ruleSet.atomicClassName != null
 	}
 
 	@Inject
@@ -31,7 +27,22 @@ class LessLanguageHelper {
 		if( !ruleSet.canBeMixin ) {
 			throw new IllegalArgumentException("can only compute q-name for rule set that can act as mixin")
 		}
-		((ruleSet.selectors.head as ToplevelSelectorIndirection).selector as ClassSelector).name.toQualifiedName
+		ruleSet.atomicClassName.toQualifiedName
+	}
+
+	def atomicClassName(RuleSet ruleSet) {
+		if( ruleSet.selectors.size != 1 ) {
+			return null
+		}
+		val atomicSelector = ruleSet.selectors.head
+		if( !(atomicSelector instanceof SimpleSelectorIndirection) ) {
+			return null
+		}
+		val indirection = (atomicSelector as SimpleSelectorIndirection).selector
+		if( !(indirection instanceof ClassSelector) ) {
+			return null
+		}
+		(indirection as ClassSelector).name
 	}
 
 }
