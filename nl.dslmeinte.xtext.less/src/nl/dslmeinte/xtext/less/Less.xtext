@@ -14,6 +14,10 @@ VariableDefinition:
 	name=VariableDeclaration ':' value=ValueExpression
 	;
 
+VariableDeclaration:
+	name=AT_ID
+	;
+
 VisibleComment:
 	comment=ML_COMMENT
 	;
@@ -37,15 +41,12 @@ RuleSet:
 	 * call and a new rule set with the selector beginning with a class selector.
 	 * 
 	 * (I don't know how less.js goes about this, so this seems
-	 * both the easiest and most lenient approach, currently.)
+	 * both the easiest and most lenient approach, currently.
+	 * It does cause a bit of ambiguity, though...)
 	 */
 
 Parameter:
 	var=VariableDeclaration (':' defaultValue=ValueExpression)?
-	;
-
-VariableDeclaration:
-	name=AT_ID
 	;
 
 // re-def. of PrimarySelectorExpression from CSS to incorporate &-combinator
