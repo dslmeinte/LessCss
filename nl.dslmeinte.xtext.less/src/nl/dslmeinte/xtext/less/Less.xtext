@@ -28,21 +28,31 @@ Import:
 	// TODO  tweak ImportUriGlobalScopeProvider to check on the importURI's extension and behave accordingly
 
 
+/*
+ * +-----------+
+ * | Rule sets |
+ * +-----------+
+ */
+
 RuleSet:
 	selectors+=SelectorExpression (',' selectors+=SelectorExpression)*
 	( '(' ( parameters+=Parameter (',' parameters+=Parameter )* )? ')' )?
 	'{'
-		(members+=RuleSetMemberSemiColonDelimited ';' | members+=RuleSet)*
-//		(members+=RuleSetMemberSemiColonDelimited)?
+		firstMemberWrapper=ChainedRuleSetMemberWrapper?
 	'}'
 	;
 	/*
-	 * Note that semi-colons are now required everywhere.
-	 * (Uncommenting the commented-out line leads to non-LL(*) behavior.)
+	 * The RuleSetMember now hang a maximally-unbalanced, right-sided parse/node tree.
+	 * This weird construct is necessary to make the semi-colon a separating everything
+	 * other than nested rule sets, rather than a delimiting token
+	 * - in which case the final semi-colon would be required, rather than optional.
+	 * (Having a semi-colon after a rule set is illegal.)
+	 * 
+	 * Use LessLanguageHelper#members(RuleSet) to obtain a linear list.
 	 */
 
 Parameter:
-	var=VariableDeclaration (':' defaultValue=ValueExpression)?
+	variable=VariableDeclaration (':' defaultValue=ValueExpression)?
 	;
 
 // re-def. of PrimarySelectorExpression from CSS to incorporate &-combinator
@@ -51,11 +61,16 @@ PrimarySelectorExpression returns SelectorExpression:
 	| {ParentCombinatorSelector} '&'
 	;
 
-RuleSetMember:	// convenience super type
-	RuleSet | RuleSetMemberSemiColonDelimited
+ChainedRuleSetMemberWrapper:
+	  member=RuleSet (next=ChainedRuleSetMemberWrapper)?
+	| member=SemiColonSeparatedRuleSetMember (';' next=ChainedRuleSetMemberWrapper?)?
 	;
 
-RuleSetMemberSemiColonDelimited:
+RuleSetMember:	// convenience super type
+	RuleSet | SemiColonSeparatedRuleSetMember
+	;
+
+SemiColonSeparatedRuleSetMember:
 	MixinCall | PropertyExpression | VariableDefinition
 	;
 
@@ -103,7 +118,7 @@ MultiplicativeExpression returns ValueExpression:
 enum MultiplicativeOperators:
 	mult='*' | div='/'
 	;
-	// note that a '%' modulo operator would cause non-LL(*) behavior in combination with the % dimension in (css::)NumberLiteral
+	// (note that a '%' modulo operator would cause non-LL(*) behavior in combination with the % dimension in (css::)NumberLiteral)
 
 ColorFunctionExpression returns ValueExpression:
 	  PrimaryValueExpression
@@ -142,6 +157,7 @@ ComponentColorLiteral:
 	  {ComponentRGBColor} 'rgb' '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ')'
 	| {ComponentHSLColor} 'hsl' '(' hue=ValueExpression ',' saturation=ValueExpression ',' lightness=ValueExpression ')'
 	;
+	// TODO  validation
 
 
 /*
@@ -161,4 +177,6 @@ terminal JAVASCRIPT_EVAL: '`' -> '`' ;
  * For now: interpolate STRINGs during generation but don't support the
  * syntax on a grammar level yet - which would require a custom lexer... (TODO)
  */
+
+// TODO  validation on STRINGs to check whether interpolation syntax is correct
 

@@ -1,5 +1,7 @@
 package nl.dslmeinte.xtext.less
 
+import java.util.ArrayList
+
 import com.google.inject.Inject
 
 import org.eclipse.xtext.naming.IQualifiedNameConverter
@@ -8,6 +10,7 @@ import org.eclipse.xtext.naming.QualifiedName
 import nl.dslmeinte.xtext.css.css.ClassSelector
 import nl.dslmeinte.xtext.less.less.LessFile
 import nl.dslmeinte.xtext.less.less.RuleSet
+import nl.dslmeinte.xtext.less.less.RuleSetMember
 import nl.dslmeinte.xtext.less.less.SimpleSelectorIndirection
 
 class LessLanguageHelper {
@@ -43,6 +46,22 @@ class LessLanguageHelper {
 			return null
 		}
 		(indirection as ClassSelector).name
+	}
+
+	/**
+	 * Flattens the members of a rule set to a list,
+	 * instead of a maximally-unbalanced tree.
+	 */
+	def Iterable<RuleSetMember> members(RuleSet ruleSet) {
+		val list = new ArrayList<RuleSetMember>();
+
+		var memberWrapper = ruleSet.firstMemberWrapper
+		while( memberWrapper != null ) {
+			list.add(memberWrapper.member)
+			memberWrapper = memberWrapper.next
+		}
+
+		list
 	}
 
 }
