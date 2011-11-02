@@ -1,17 +1,13 @@
 package nl.dslmeinte.xtext.less
 
-import java.util.ArrayList
-
 import com.google.inject.Inject
-
-import org.eclipse.xtext.naming.IQualifiedNameConverter
-import org.eclipse.xtext.naming.QualifiedName
-
+import java.util.ArrayList
 import nl.dslmeinte.xtext.css.css.ClassSelector
 import nl.dslmeinte.xtext.less.less.LessFile
 import nl.dslmeinte.xtext.less.less.RuleSet
 import nl.dslmeinte.xtext.less.less.RuleSetMember
 import nl.dslmeinte.xtext.less.less.SimpleSelectorIndirection
+import org.eclipse.xtext.naming.IQualifiedNameConverter
 
 class LessLanguageHelper {
 

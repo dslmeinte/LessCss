@@ -1,16 +1,12 @@
 package nl.dslmeinte.xtext.less.scoping
 
-import nl.dslmeinte.xtext.less.less.LessFile
-import nl.dslmeinte.xtext.less.less.RuleSet
-
-import org.eclipse.emf.ecore.EReference
-import org.eclipse.xtext.scoping.IScope
-import org.eclipse.xtext.scoping.impl.AbstractDeclarativeScopeProvider
-import org.eclipse.xtext.scoping.Scopes
-import nl.dslmeinte.xtext.less.less.ClassSelector
-import org.eclipse.xtext.naming.QualifiedName
 import com.google.inject.Inject
 import nl.dslmeinte.xtext.less.LessLanguageHelper
+import nl.dslmeinte.xtext.less.less.LessFile
+import org.eclipse.emf.ecore.EReference
+import org.eclipse.xtext.scoping.IScope
+import org.eclipse.xtext.scoping.Scopes
+import org.eclipse.xtext.scoping.impl.AbstractDeclarativeScopeProvider
 
 class LessScopeProviderImpl extends AbstractDeclarativeScopeProvider {
 

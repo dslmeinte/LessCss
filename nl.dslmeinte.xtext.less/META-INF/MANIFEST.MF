@@ -30,4 +30,7 @@ Export-Package: nl.dslmeinte.xtext.less,
  nl.dslmeinte.xtext.less.serializer,
  nl.dslmeinte.xtext.less.parser.antlr,
  nl.dslmeinte.xtext.less.parser.antlr.internal,
- nl.dslmeinte.xtext.less.validation
+ nl.dslmeinte.xtext.less.validation,
+ nl.dslmeinte.xtext.less.scoping,
+ nl.dslmeinte.xtext.less.generator,
+ nl.dslmeinte.xtext.less.formatting

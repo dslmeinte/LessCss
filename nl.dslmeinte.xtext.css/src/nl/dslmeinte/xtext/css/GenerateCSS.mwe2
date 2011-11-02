@@ -38,7 +38,9 @@ Workflow {
 
             fragment = ecore.EcoreGeneratorFragment {}
 
-            fragment = serializer.SerializerFragment {}
+            fragment = serializer.SerializerFragment {
+            	generateStub = false
+            }
 
             fragment = resourceFactory.ResourceFactoryFragment {
                 fileExtensions = file.extensions
@@ -49,12 +51,12 @@ Workflow {
             }
 
             fragment = validation.JavaValidatorFragment {
-//                composedCheck = "org.eclipse.xtext.validation.ImportUriValidator"
+                composedCheck = "org.eclipse.xtext.validation.ImportUriValidator"
 //                composedCheck = "org.eclipse.xtext.validation.NamesAreUniqueValidator"
             }
 
             fragment = scoping.ImportURIScopingFragment {}
-            fragment = exporting.SimpleNamesFragment {}
+            fragment = CorrectedSimpleNamesFragment {}
 
             fragment = formatting.FormatterFragment {}
 
