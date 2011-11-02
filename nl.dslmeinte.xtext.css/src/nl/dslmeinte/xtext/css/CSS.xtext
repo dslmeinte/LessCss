@@ -11,7 +11,7 @@
  */
 
 
-grammar nl.dslmeinte.xtext.css.CSS with org.eclipse.xtext.common.Terminals hidden(WS, ML_COMMENT)
+grammar nl.dslmeinte.xtext.css.CSS hidden(WS, ML_COMMENT)
 
 generate css "http://www.dslmeinte.nl/xtext/css"
 
@@ -23,11 +23,15 @@ CSSFile:
 	;
 
 Statement:
-	Import | Rule
+	Import | NamespaceDeclaration | Rule
 	;
 
 Import:
 	'@import' importURI=STRING
+	;
+
+NamespaceDeclaration:
+	'@namespace' name=ID url=URL ';'
 	;
 
 Rule:
@@ -128,9 +132,9 @@ PrimarySelectorExpression returns SelectorExpression:
 	SimpleSelector
 	;
 
-SimpleSelector:
-	  {UniversalSelector} '*'
-	| {TypeSelector}	( knownType=HtmlElements | unknownType=ID )
+SimpleSelector:	// TODO  include attribute selector and pseudo-class?
+	  {TypeSelector}	( knownType=HtmlElements | unknownType=ID )
+	| {UniversalSelector} '*'
 	| {IDSelector}		name=HASH_ID
 	| {ClassSelector}	name=DOT_ID
 	;
@@ -222,6 +226,9 @@ terminal HASH_ID: '#' PREFIXABLE_ID_START ID_PART* ;
 terminal DOT_ID: '.' PREFIXABLE_ID_START ID_PART* ;
 	// CSSValueConverterService#DOT_ID takes care of removing the '.'
 
+terminal URL: 'url(' -> ')' ;
+	// CSSValueConverterService#URL takes care of removing the 'url(' WS .. WS ')
+
 terminal INT returns ecore::EInt: ('-')? DEC_DIGIT+ ;
 
 terminal DECIMAL returns ecore::EDouble: ('-')? DEC_DIGIT+ '.' DEC_DIGIT+ ;
@@ -235,4 +242,13 @@ terminal fragment ID_PART: ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9') ;
 terminal fragment ID_START: PREFIXABLE_ID_START | '-';
 
 terminal fragment PREFIXABLE_ID_START: ('a'..'z'|'A'..'Z'|'_') ;
+
+terminal STRING	: 
+			'"' ( '\\' ('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|'"') )* '"' |
+			"'" ( '\\' ('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|"'") )* "'"
+		; 
+
+terminal ML_COMMENT	: '/*' -> '*/' ;
+
+terminal WS			: (' '|'\t'|'\r'|'\n')+ ;	// TODO  add '\f' without causing Xtext generation problems
 

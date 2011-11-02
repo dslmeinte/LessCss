@@ -166,6 +166,8 @@ ComponentColorLiteral:
  * +-----------+
  */
 
+terminal SL_COMMENT : '//' !('\n'|'\r')* ('\r'? '\n')?;
+
 terminal AT_ID: '@' PREFIXABLE_ID_START ID_PART* ;
 	// LessValueConverterService#AT_ID takes care of removing the @
 
