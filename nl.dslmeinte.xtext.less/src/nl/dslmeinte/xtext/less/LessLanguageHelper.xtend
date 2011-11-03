@@ -3,52 +3,56 @@ package nl.dslmeinte.xtext.less
 import com.google.inject.Inject
 import java.util.ArrayList
 import nl.dslmeinte.xtext.css.css.ClassSelector
+import nl.dslmeinte.xtext.css.css.SimpleSelectorSequence
+import nl.dslmeinte.xtext.less.less.ExtendedRuleSet
 import nl.dslmeinte.xtext.less.less.LessFile
-import nl.dslmeinte.xtext.less.less.RuleSet
 import nl.dslmeinte.xtext.less.less.RuleSetMember
-import nl.dslmeinte.xtext.less.less.SimpleSelectorIndirection
 import org.eclipse.xtext.naming.IQualifiedNameConverter
 
 class LessLanguageHelper {
 
 	def mixinCandidates(LessFile lessFile) {
-		lessFile.statements.filter(typeof(RuleSet)).filter([RuleSet rs|rs.canBeMixin])
+		lessFile.statements.filter(typeof(ExtendedRuleSet)).filter [it.canBeMixin]
 	}
 
-	def canBeMixin(RuleSet ruleSet) {
+	def canBeMixin(ExtendedRuleSet ruleSet) {
 		ruleSet.atomicClassName != null
 	}
 
 	@Inject
 	extension IQualifiedNameConverter qNameConverter
 
-	def qName(RuleSet ruleSet) {
-		if( !ruleSet.canBeMixin ) {
+	def qName(ExtendedRuleSet ruleSet) {
+		if( ruleSet.atomicClassName == null ) {
 			throw new IllegalArgumentException("can only compute q-name for rule set that can act as mixin")
 		}
 		ruleSet.atomicClassName.toQualifiedName
 	}
 
-	def atomicClassName(RuleSet ruleSet) {
+	def atomicClassName(ExtendedRuleSet ruleSet) {
 		if( ruleSet.selectors.size != 1 ) {
 			return null
 		}
-		val atomicSelector = ruleSet.selectors.head
-		if( !(atomicSelector instanceof SimpleSelectorIndirection) ) {
+		val firstSelector = ruleSet.selectors.head
+		if( !(firstSelector instanceof SimpleSelectorSequence) ) {
 			return null
 		}
-		val indirection = (atomicSelector as SimpleSelectorIndirection).selector
-		if( !(indirection instanceof ClassSelector) ) {
+		val firstSelectorSequence = firstSelector as SimpleSelectorSequence
+		if( !(firstSelectorSequence.head == null && firstSelectorSequence.simpleSelectors.size == 1) ) {
 			return null
 		}
-		(indirection as ClassSelector).name
+		val simpleSelector = firstSelectorSequence.simpleSelectors.head
+		if( !(simpleSelector instanceof ClassSelector) ) {
+			return null
+		}
+		(simpleSelector as ClassSelector).name
 	}
 
 	/**
 	 * Flattens the members of a rule set to a list,
 	 * instead of a maximally-unbalanced tree.
 	 */
-	def Iterable<RuleSetMember> members(RuleSet ruleSet) {
+	def Iterable<RuleSetMember> members(ExtendedRuleSet ruleSet) {
 		val list = new ArrayList<RuleSetMember>();
 
 		var memberWrapper = ruleSet.firstMemberWrapper
