@@ -7,7 +7,7 @@ LessFile:
 	statements+=Statement*;
 
 Statement:
-	(VariableDefinition ';') | RuleSet | VisibleComment | Import
+	(VariableDefinition ';') | ExtendedRuleSet | VisibleComment | Import
 	;
 
 VariableDefinition:
@@ -34,8 +34,8 @@ Import:
  * +-----------+
  */
 
-RuleSet:
-	selectors+=SelectorExpression (',' selectors+=SelectorExpression)*
+ExtendedRuleSet:
+	selectors+=Selector (',' selectors+=Selector)*
 	( '(' ( parameters+=Parameter (',' parameters+=Parameter )* )? ')' )?
 	'{'
 		firstMemberWrapper=ChainedRuleSetMemberWrapper?
@@ -48,34 +48,38 @@ RuleSet:
 	 * - in which case the final semi-colon would be required, rather than optional.
 	 * (Having a semi-colon after a rule set is illegal.)
 	 * 
-	 * Use LessLanguageHelper#members(RuleSet) to obtain a linear list.
+	 * Use LessLanguageHelper#members(ExtendedRuleSet) to obtain a linear list.
 	 */
+
+// re-def. of the rule from the CSS grammar, to incorporate the ParentCombinator
+SimpleSelectorSequence hidden():
+	  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=( IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector | ParentCombinator )* )
+	| (                                           simpleSelectors+=( IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector | ParentCombinator )+ )
+	;
+	// TODO  check that modified CSS.ecore doesn't clash with this one
 
 Parameter:
 	variable=VariableDeclaration (':' defaultValue=ValueExpression)?
 	;
 
-// re-def. of PrimarySelectorExpression from CSS to incorporate &-combinator
-PrimarySelectorExpression returns SelectorExpression:
-	  {SimpleSelectorIndirection} selector=SimpleSelector
-	| {ParentCombinatorSelector} '&'
-	;
-
 ChainedRuleSetMemberWrapper:
-	  member=RuleSet (next=ChainedRuleSetMemberWrapper)?
-	| member=SemiColonSeparatedRuleSetMember (';' next=ChainedRuleSetMemberWrapper?)?
+	  member=ExtendedRuleSet (next=ChainedRuleSetMemberWrapper)?
+	| member=SemiColonSeparatedExtendedRuleSetMember (';' next=ChainedRuleSetMemberWrapper?)?
 	;
 
 RuleSetMember:	// convenience super type
-	RuleSet | SemiColonSeparatedRuleSetMember
+	ExtendedRuleSet | SemiColonSeparatedExtendedRuleSetMember
 	;
 
-SemiColonSeparatedRuleSetMember:
+SemiColonSeparatedExtendedRuleSetMember:
 	MixinCall | PropertyExpression | VariableDefinition
 	;
 
 MixinCall:
-	ruleSet=[RuleSet|DOT_ID]
+	ruleSet=[ExtendedRuleSet|DOT_ID]
+		// TODO  ...but we may want to extended this to RuleSet as well,
+		//			if we consider regular rule sets in an imported .css file
+		//			as mixin candidates as well
 		( '(' arguments+=ValueExpression (',' arguments+=ValueExpression)* ')' )?
 	;
 	// scoping of ruleSet: all mixin candidates

@@ -23,7 +23,7 @@ CSSFile:
 	;
 
 Statement:
-	Import | NamespaceDeclaration | Rule
+	Import | NamespaceDeclaration | RuleSet
 	;
 
 Import:
@@ -31,16 +31,20 @@ Import:
 	;
 
 NamespaceDeclaration:
-	'@namespace' name=ID url=URL ';'
+	'@namespace' name=ID? url=URL ';'
 	;
 
-Rule:
-	selectors+=SelectorExpression (',' selectors+=SelectorExpression)* '{'
+RuleSet:
+	selectors+=Selector (',' selectors+=Selector)* '{'	// ~ selectors_group
 		(
 			propertyValues+=PropertyValue (';' propertyValues+=PropertyValue)* ';'?
 		)?
 	'}'
 	;
+	/*
+	 * Note that this grammar is a little wider than the specification allows,
+	 * since whitespace following a SelectorExpression is hidden.
+	 */
 
 PropertyValue:
 	KnownPropertyValue | UnknownPropertyValue
@@ -61,88 +65,171 @@ enum KnownProperties:
 
 
 /*
- * +----------------------+
- * | Selector expressions |
- * +----------------------+
+ * +-----------+
+ * | Selectors |
+ * +-----------+
  * 
  * Specification: http://www.w3.org/TR/css3-selectors
- * Note that this implementation is not yet complete!
- * 
- * From high to low precedence:
- * 
- * - universal, type, ID, class: atomic (primary)
- * - ID, class: postfix, left-associative
- * - attribute selectors: simple, value (5 variants), language; postfix, left-associative
- * - pseudo-class: postfix, non-associative
- * - child, adjacent sibling, descendant: infix/binary, left-associative
  */
 
-SelectorExpression:
+Selector:
 	CombinatorExpression
 	;
 
+SimpleSelectorSequence hidden():
+	  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=( IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector )* )
+	| (                                           simpleSelectors+=( IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector )+ )
+	;
+	// TODO  modify Ecore s.t. head and simpleSelectors are of type SimpleSelector (==only occurrence of that)
+
 CombinatorExpression returns SelectorExpression hidden():
-	PseudoClassExpression (
-		  {DescendantCombinator.left=current}		ws=WS					right=PseudoClassExpression
-		| {ChildCombinator.left=current}			wsL=WS? '>' wsR=WS?		right=PseudoClassExpression
-		| {AdjacentSiblingCombinator.left=current}	wsL=WS? '+' wsR=WS?		right=PseudoClassExpression
-		| {GeneralSiblingCombinator.left=current}	wsL=WS? '~' wsR=WS?		right=PseudoClassExpression
+	SimpleSelectorSequence (
+		  {DescendantCombinator.left=current}		wsI=WS					right=SimpleSelectorSequence
+		| {ChildCombinator.left=current}			wsL=WS? '>' wsR=WS?		right=SimpleSelectorSequence
+		| {AdjacentSiblingCombinator.left=current}	wsL=WS? '+' wsR=WS?		right=SimpleSelectorSequence
+		| {GeneralSiblingCombinator.left=current}	wsL=WS? '~' wsR=WS?		right=SimpleSelectorSequence
 	)*
 	;
-	// The scanned whitespace needs to be assigned, otherwise we can't re-serialize reliably.
+	/*
+	 * The parse tree from a CombinatorExpression will always yield a linked list
+	 * (maximally-unbalanced, right-sided tree), but this way it's easier to
+	 * assign the specific combinator and surrounding whitespace so that the object
+	 * is re-serializable.
+	 */
 
-PseudoClassExpression returns SelectorExpression hidden():
-	AttributeSelectorExpression ({PseudoClassSelector.operand=current} ':' pseudoClass=PseudoClasses)?
+enum NoArgsPseudos:
+	  link | visited
+	| hover | active | focus
+	| target
+	| enabled | disabled | checked | indeterminate
+	| root
+	| firstChild='first-child' | lastChild='last-child'
+    | onlyChild='only-child'
+    | empty
 	;
 
-enum PseudoClasses:
-	  active | after | before
-	| firstChild='first-child' | firstLetter='first-letter' | firstLine='first-line'
-	| focus | hover | lang | link | visited
+SimpleSelector:
+	  TypeSelector
+	| UniversalSelector
+	| AttributeSelector
+	| IDSelector
+	| ClassSelector
+	| ParentCombinator
 	;
 
-AttributeSelectorExpression returns SelectorExpression hidden():
-	SubSelectorExpression (
-		'['
-			(
-				  {SimpleAttributeSelector.operand=current}		attributeName=ID
-				| {AttributeValueSelector.operand=current}		attributeName=ID operator=AttributeValueComparators value=STRING
-				| {LanguageAttributeSelector.operand=current}	attributeName=ID '|=' languageName=STRING 
-			)
-		 ']'
-	)*
+TypeSelector:
+	(namespacePrefix=NamespacePrefix)? ( knownType=HtmlElements | unknownType=ID )
 	;
 
-enum AttributeValueComparators:
-	  exact='='
-	| partial='~='
-	| beginningSubstring='^='
-	| endingSubstring='$='
-	| arbitrarySubstring='*='
-	;
-
-SubSelectorExpression returns SelectorExpression hidden():
-	PrimarySelectorExpression (
-		  {IDSubSelector.parent=current}	name=HASH_ID
-		| {ClassSubSelector.parent=current}	name=DOT_ID
-	)*
-	;
-
-PrimarySelectorExpression returns SelectorExpression:
-	SimpleSelector
-	;
-
-SimpleSelector:	// TODO  include attribute selector and pseudo-class?
-	  {TypeSelector}	( knownType=HtmlElements | unknownType=ID )
-	| {UniversalSelector} '*'
-	| {IDSelector}		name=HASH_ID
-	| {ClassSelector}	name=DOT_ID
+NamespacePrefix:
+	  ( {NamespacePrefix} namespace=[NamespaceDeclaration|ID] | {UniversalNamespacePrefix} '*' ) '|'
+	| {WithoutNamespacePrefix} '|'
 	;
 
 enum HtmlElements:
 	a | pre | body
 	;
 	// TODO  generate into this grammar from other DSL...
+
+UniversalSelector:
+	{UniversalSelector}
+	(namespacePrefix=NamespacePrefix)? '*'
+	;
+
+AttributeSelector hidden(WS):
+	'['
+		attribute=Attribute matcher=AttributeSelectorMatchers value=(ID|STRING)
+	']'
+	;
+
+Attribute hidden():
+	(namespacePrefix=NamespacePrefix)? name=ID
+	;
+
+enum AttributeSelectorMatchers:
+	  prefix='^='
+	| suffix='$='
+	| substring='*='
+	| exact='='		// TODO  check name
+	| includes='~='
+	| language='|='	// TODO  check name
+	;
+
+IDSelector:
+	name=HASH_ID
+	;
+
+ClassSelector:
+	name=DOT_ID
+	;
+
+PseudoSelector:
+	  NoArgsPseudoClassSelector
+	| PseudoElementSelector
+	| LanguagePseudoClassSelector
+	| FunctionalPseudoClassSelector
+	;
+
+NoArgsPseudoClassSelector hidden():
+	':' pseudo=NoArgsPseudos
+	;
+
+PseudoElementSelector hidden():
+	':' doubleSemiColon?=':'? pseudo=PseudoElements
+	;
+
+enum PseudoElements:
+	  firstLetter='first-letter' | firstLine='first-line'
+	| before | after
+	;
+
+FunctionalPseudoClassSelector hidden():
+	':' pseudo=FunctionalPseudoClasses '(' argument=TypeArgument ')'
+	;
+
+TypeArgument hidden(WS):
+	  ConstantArgument
+	| LinearArgument
+	| {ParityArgument} parity=Parities
+	;
+
+LinearArgument hidden(WS):
+	coefficient=Coefficient ( constantSign=('-'|'+')? constant=INT )?
+	;
+
+Coefficient hidden():
+	{Coefficient}
+	sign=('-'|'+')? int=INT? 'n'
+	;
+
+ConstantArgument hidden():	// separate rule to control whitespace
+	sign=('-'|'+')? int=INT
+	;
+
+enum Parities:
+	odd | even
+	;
+
+enum FunctionalPseudoClasses:
+	  nthChild='nth-child' | nthLastChild='nth-last-child'
+	| nthOfType='nth-of-type' | nthLastOfType='nth-last-if-type'
+	| firstOfType='first-of-type' | lastOfType='last-of-type'
+	| onlyOfType='only-of-type'
+	;
+
+LanguagePseudoClassSelector hidden():
+	':lang(' langugage=ID ')'
+	;
+	// validation: language matches /\w+(-\w+)?/
+
+NegationSelector hidden():
+	':not(' simpleSelector=SimpleSelector ')'
+	;
+	// validation: simpleSelector cannot be a NegationSelector nor a ParentCombinator
+
+ParentCombinator:	// used in Less grammar (needs validation for when used in CSS file!)
+	{ParentCombinator} '&'
+	;
 
 
 /*
@@ -156,15 +243,8 @@ ValueLiteral:
 	;
 
 NumberLiteral:
-	IntegerLiteral | DecimalLiteral
-	;
-
-IntegerLiteral hidden():
-	int=INT dimension=Dimensions?
-	;
-
-DecimalLiteral hidden():
-	decimal=DECIMAL dimension=Dimensions?
+	( {IntegerLiteral} int=INT | {DecimalLiteral} decimal=DECIMAL )
+	dimension=Dimensions?
 	;
 
 enum Dimensions:
@@ -198,8 +278,6 @@ BareWordLiteral:
 	bareWord=ID
 	;
 
-// TODO  UriLiteral
-
 
 /*
  * +-----------+
@@ -222,9 +300,12 @@ terminal ID: ID_START ID_PART* ;
 terminal HASH_ID: '#' PREFIXABLE_ID_START ID_PART* ;
 	// CSSValueConverterService#HASH_ID takes care of removing the '#'
 
-// special terminal for class id's:
+// special terminal for class references:
 terminal DOT_ID: '.' PREFIXABLE_ID_START ID_PART* ;
 	// CSSValueConverterService#DOT_ID takes care of removing the '.'
+
+// special terminal for namespace references:
+terminal PIPE_ID: '|' PREFIXABLE_ID_START ID_PART* ;
 
 terminal URL: 'url(' -> ')' ;
 	// CSSValueConverterService#URL takes care of removing the 'url(' WS .. WS ')
@@ -246,7 +327,7 @@ terminal fragment PREFIXABLE_ID_START: ('a'..'z'|'A'..'Z'|'_') ;
 terminal STRING	: 
 			'"' ( '\\' ('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|'"') )* '"' |
 			"'" ( '\\' ('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|"'") )* "'"
-		; 
+		;
 
 terminal ML_COMMENT	: '/*' -> '*/' ;
 
