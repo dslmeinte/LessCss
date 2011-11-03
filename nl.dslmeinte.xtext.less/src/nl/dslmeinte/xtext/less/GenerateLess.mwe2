@@ -60,7 +60,7 @@ Workflow {
             }
 
             fragment = scoping.ImportURIScopingFragment {}
-            fragment = nl.dslmeinte.xtext.css.CorrectedSimpleNamesFragment {}
+            fragment = nl.dslmeinte.xtext.CorrectedSimpleNamesFragment {}
 
             fragment = builder.BuilderIntegrationFragment {}
 

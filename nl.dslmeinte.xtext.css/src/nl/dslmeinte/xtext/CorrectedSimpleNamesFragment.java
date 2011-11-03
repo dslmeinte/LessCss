@@ -1,4 +1,4 @@
-package nl.dslmeinte.xtext.css;
+package nl.dslmeinte.xtext;
 
 import java.util.Set;
 
