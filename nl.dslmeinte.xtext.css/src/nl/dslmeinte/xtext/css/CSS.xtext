@@ -222,7 +222,7 @@ enum FunctionalPseudoClasses:
 	;
 
 LanguagePseudoClassSelector hidden():
-	':lang(' langugage=ID ')'
+	':lang(' langugageId=ID ')'
 	;
 	// validation: language matches /\w+(-\w+)?/
 
