@@ -1,5 +1,7 @@
 grammar nl.dslmeinte.xtext.less.Less with nl.dslmeinte.xtext.css.CSS hidden(WS, SL_COMMENT)
 
+import "http://www.dslmeinte.nl/xtext/css" as css
+
 generate less "http://www.dslmeinte.nl/xtext/less"
 
 
@@ -53,10 +55,17 @@ ExtendedRuleSet:
 
 // re-def. of the rule from the CSS grammar, to incorporate the ParentCombinator
 SimpleSelectorSequence hidden():
-	  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=( IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector | ParentCombinator )* )
-	| (                                           simpleSelectors+=( IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector | ParentCombinator )+ )
+	  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=TailSimpleSelector* )
+	| (                                           simpleSelectors+=TailSimpleSelector+ )
 	;
-	// TODO  check that modified CSS.ecore doesn't clash with this one
+
+TailSimpleSelector returns css::SimpleSelector:	// synthetic type to limit choice for parser, without need for validation
+	IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector | ParentCombinator
+	;
+
+ParentCombinator returns css::SimpleSelector:	// used in Less grammar (needs validation for when used in CSS file!)
+	{ParentCombinator} '&'
+	;
 
 Parameter:
 	variable=VariableDeclaration (':' defaultValue=ValueExpression)?
@@ -147,7 +156,7 @@ PrimaryValueExpression returns ValueExpression:
 	| {JavascriptLiteral}	value=JAVASCRIPT_EVAL
 	;
 
-VariableReference:
+VariableReference hidden():
 	(indirections+='@')* variable=[VariableDeclaration|AT_ID]
 	;
 	// (.indirections counts the level of indirection)

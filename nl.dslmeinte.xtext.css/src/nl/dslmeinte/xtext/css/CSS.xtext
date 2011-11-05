@@ -61,7 +61,7 @@ UnknownPropertyValue:
 enum KnownProperties:
 	color | border_top='border-top' // | ..
 	;
-	// TODO  generate into this grammar from other DSL...
+	// TODO  generate into this grammar to provide content assist/code completion
 
 
 /*
@@ -77,10 +77,13 @@ Selector:
 	;
 
 SimpleSelectorSequence hidden():
-	  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=( IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector )* )
-	| (                                           simpleSelectors+=( IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector )+ )
+	  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=TailSimpleSelector* )
+	| (                                           simpleSelectors+=TailSimpleSelector+ )
 	;
-	// TODO  modify Ecore s.t. head and simpleSelectors are of type SimpleSelector (==only occurrence of that)
+
+TailSimpleSelector returns SimpleSelector:	// synthetic type to limit choice for parser, without need for validation
+	IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector
+	;
 
 CombinatorExpression returns SelectorExpression hidden():
 	SimpleSelectorSequence (
@@ -108,13 +111,14 @@ enum NoArgsPseudos:
     | empty
 	;
 
-SimpleSelector:
+SimpleSelector:		// convenience super type, also references by Less grammar
 	  TypeSelector
 	| UniversalSelector
 	| AttributeSelector
 	| IDSelector
 	| ClassSelector
-	| ParentCombinator
+	| PseudoSelector
+	| NegationSelector
 	;
 
 TypeSelector:
@@ -129,7 +133,7 @@ NamespacePrefix:
 enum HtmlElements:
 	a | pre | body
 	;
-	// TODO  generate into this grammar from other DSL...
+	// TODO  generate into this grammar to be able to provide better content assist/code completion
 
 UniversalSelector:
 	{UniversalSelector}
@@ -156,7 +160,7 @@ enum AttributeSelectorMatchers:
 	;
 
 IDSelector:
-	name=HASH_ID
+	name=(HASH_ID|RGB_COLOR)	// RGB_COLOR has priority but is otherwise subsumed by HASH_ID
 	;
 
 ClassSelector:
@@ -197,7 +201,7 @@ LinearArgument hidden(WS):
 	coefficient=Coefficient ( constantSign=('-'|'+')? constant=INT )?
 	;
 
-Coefficient hidden():
+Coefficient hidden():	// separate rule to control whitespace
 	{Coefficient}
 	sign=('-'|'+')? int=INT? 'n'
 	;
@@ -223,12 +227,16 @@ LanguagePseudoClassSelector hidden():
 	// validation: language matches /\w+(-\w+)?/
 
 NegationSelector hidden():
-	':not(' simpleSelector=SimpleSelector ')'
+	':not(' simpleSelector=NegationSimpleSelector ')'
 	;
-	// validation: simpleSelector cannot be a NegationSelector nor a ParentCombinator
 
-ParentCombinator:	// used in Less grammar (needs validation for when used in CSS file!)
-	{ParentCombinator} '&'
+NegationSimpleSelector returns SimpleSelector:	// synthetic type to limit choice for parser, without need for validation
+	  TypeSelector
+	| UniversalSelector
+	| AttributeSelector
+	| IDSelector
+	| ClassSelector
+	| PseudoSelector
 	;
 
 
@@ -242,7 +250,7 @@ ValueLiteral:
 	NumberLiteral | StringLiteral | ColorLiteral | BareWordLiteral
 	;
 
-NumberLiteral:
+NumberLiteral hidden():
 	( {IntegerLiteral} int=INT | {DecimalLiteral} decimal=DECIMAL )
 	dimension=Dimensions?
 	;
@@ -267,11 +275,13 @@ ComponentColorLiteral:
 	;
 	// validation on ComponentRGBColor:
 	//	either all percentages (with correct range), or all dimension-less integers 0-255
+	// validation on ComponentHSLColor:
+	//	all percentages (with correct range)
 
 enum ColorNames:
 	black | white // | ...
 	;
-	// TODO  generate into this grammar from other DSL
+	// TODO  generate into this grammar to provide content assist/code completion
 
 // something we don't know about:
 BareWordLiteral:
