@@ -85,13 +85,14 @@ SemiColonSeparatedExtendedRuleSetMember:
 	;
 
 MixinCall:
-	ruleSet=[ExtendedRuleSet|DOT_ID]
+	(group=[ExtendedRuleSet|HASH_ID] '>')? ruleSet=[ExtendedRuleSet|DOT_ID]
 		// TODO  ...but we may want to extended this to RuleSet as well,
 		//			if we consider regular rule sets in an imported .css file
 		//			as mixin candidates as well
 		( '(' arguments+=ValueExpression (',' arguments+=ValueExpression)* ')' )?
 	;
-	// scoping of ruleSet: all mixin candidates
+	// scoping of .group: all ExtendedRuleSets which have a single ID-name
+	// scoping of .ruleSet: all mixin candidates
 
 PropertyExpression:
 	KnownPropertyExpression | UnknownPropertyExpression
@@ -125,7 +126,7 @@ enum AdditiveOperators:
 	;
 
 MultiplicativeExpression returns ValueExpression:
-	ColorFunctionExpression ({MultiplicativeExpression.left=current} operator=MultiplicativeOperators right=ColorFunctionExpression)*
+	PrimaryValueExpression ({MultiplicativeExpression.left=current} operator=MultiplicativeOperators right=PrimaryValueExpression)*
 	;
 
 enum MultiplicativeOperators:
@@ -133,27 +134,31 @@ enum MultiplicativeOperators:
 	;
 	// (note that a '%' modulo operator would cause non-LL(*) behavior in combination with the % dimension in (css::)NumberLiteral)
 
-ColorFunctionExpression returns ValueExpression:
-	  PrimaryValueExpression
-	| {ColorFunctionCall} function=ColorFunctions '(' color=ValueExpression ',' modifier=NumberLiteral ')'
-	;
-	// TODO  validation (requires evaluation engine)
-
-enum ColorFunctions:
-	  lighten | darken
-	| saturate | desaturate
-	| fadein | fadeout
-	| spin
-	| hue | saturation | lightness
-	;
-
 PrimaryValueExpression returns ValueExpression:
 	  '(' ValueExpression ')'
+	| ColorFunctionCall
 	| VariableReference
 	| {ArgumentsReference} '@arguments'
 	| {CSSLiteral}			value=ValueLiteral
 	| {EscapedLiteral}		value=ESCAPED_VALUE
 	| {JavascriptLiteral}	value=JAVASCRIPT_EVAL
+	;
+
+ColorFunctionCall:
+	  {TwoArgsFunctionCall} function=TwoArgsColorFunctions	'(' color=ValueExpression ',' modifier=NumberLiteral ')'
+	| {OneArgFunctionCall}	function=OneArgColorFunctions	'(' color=ValueExpression ')'
+	;
+	// TODO  validation (requires evaluation engine)
+
+enum TwoArgsColorFunctions:
+	  lighten | darken
+	| saturate | desaturate
+	| fadein | fadeout
+	| spin
+	;
+
+enum OneArgColorFunctions:
+	hue | saturation | lightness
 	;
 
 VariableReference hidden():

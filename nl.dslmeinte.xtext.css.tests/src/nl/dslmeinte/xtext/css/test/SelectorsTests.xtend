@@ -20,6 +20,7 @@ class SelectorsTests extends AbstractXtextTests {
 		val cssFile = getModel(^class.classLoader.getResourceAsStream(path))
 		val issues = diagnostician.validate(cssFile).children
 		if( issues.size > 0 ) {
+			// FIXME  the following won't output something?!
 			issues.map [println(it.message)]
 			Assert::fail
 		}

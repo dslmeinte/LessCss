@@ -31,7 +31,7 @@ Import:
 	;
 
 NamespaceDeclaration:
-	'@namespace' name=ID? url=URL ';'
+	'@namespace' name=ID? url=(STRING|URL) ';'
 	;
 
 RuleSet:
@@ -80,6 +80,7 @@ SimpleSelectorSequence hidden():
 	  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=TailSimpleSelector* )
 	| (                                           simpleSelectors+=TailSimpleSelector+ )
 	;
+	 // validation: only last element may be a PseudoElementSelector (sub type of PseudoSelector)
 
 TailSimpleSelector returns SimpleSelector:	// synthetic type to limit choice for parser, without need for validation
 	IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector
@@ -99,17 +100,6 @@ CombinatorExpression returns SelectorExpression hidden():
 	 * assign the specific combinator and surrounding whitespace so that the object
 	 * is re-serializable.
 	 */
-
-enum NoArgsPseudos:
-	  link | visited
-	| hover | active | focus
-	| target
-	| enabled | disabled | checked | indeterminate
-	| root
-	| firstChild='first-child' | lastChild='last-child'
-    | onlyChild='only-child'
-    | empty
-	;
 
 SimpleSelector:		// convenience super type, also references by Less grammar
 	  TypeSelector
@@ -136,15 +126,15 @@ enum HtmlElements:
 	// TODO  generate into this grammar to be able to provide better content assist/code completion
 
 UniversalSelector:
-	{UniversalSelector}
-	(namespacePrefix=NamespacePrefix)? '*'
+	{UniversalSelector} (namespacePrefix=NamespacePrefix)? '*'
 	;
 
 AttributeSelector hidden(WS):
 	'['
-		attribute=Attribute matcher=AttributeSelectorMatchers value=(ID|STRING)
+		attribute=Attribute ( matcher=AttributeSelectorMatchers value=(ID|STRING) )?	// !matcher.eIsSet means: AttributePresenceSelector
 	']'
 	;
+	// TODO  try to find a solution which has better hierarchy (e.g., AttributeValueSelector and AttributePresenceSelector)
 
 Attribute hidden():
 	(namespacePrefix=NamespacePrefix)? name=ID
@@ -168,27 +158,47 @@ ClassSelector:
 	;
 
 PseudoSelector:
-	  NoArgsPseudoClassSelector
-	| PseudoElementSelector
-	| LanguagePseudoClassSelector
-	| FunctionalPseudoClassSelector
+	':'
+	(
+		  NoArgsPseudoClassSelector
+		| PseudoElementSelector
+		| LanguagePseudoClassSelector
+		| FunctionalPseudoClassSelector
+	)
 	;
 
 NoArgsPseudoClassSelector hidden():
-	':' pseudo=NoArgsPseudos
+	pseudo=NoArgsPseudos
+	;
+
+enum NoArgsPseudos:
+	  link | visited
+	| hover | active | focus
+	| target
+	| enabled | disabled | checked | indeterminate
+	| root
+	| firstChild='first-child' | lastChild='last-child'
+    | onlyChild='only-child'
+    | empty
 	;
 
 PseudoElementSelector hidden():
-	':' doubleSemiColon?=':'? pseudo=PseudoElements
+	doubleSemiColon?=':'? pseudo=PseudoElements
 	;
 
 enum PseudoElements:
 	  firstLetter='first-letter' | firstLine='first-line'
 	| before | after
 	;
+	// validation: warning if "legacy" pseudo-element is used with only a single semi-colon
+
+LanguagePseudoClassSelector hidden():
+	'lang(' langugageId=ID ')'
+	;
+	// validation: language matches /\w+(-\w+)?/
 
 FunctionalPseudoClassSelector hidden():
-	':' pseudo=FunctionalPseudoClasses '(' argument=TypeArgument ')'
+	pseudo=FunctionalPseudoClasses '(' argument=TypeArgument ')'
 	;
 
 TypeArgument hidden(WS):
@@ -221,11 +231,6 @@ enum FunctionalPseudoClasses:
 	| onlyOfType='only-of-type'
 	;
 
-LanguagePseudoClassSelector hidden():
-	':lang(' langugageId=ID ')'
-	;
-	// validation: language matches /\w+(-\w+)?/
-
 NegationSelector hidden():
 	':not(' simpleSelector=NegationSimpleSelector ')'
 	;
@@ -247,7 +252,7 @@ NegationSimpleSelector returns SimpleSelector:	// synthetic type to limit choice
  */
 
 ValueLiteral:
-	NumberLiteral | StringLiteral | ColorLiteral | BareWordLiteral
+	NumberLiteral | StringLiteral | ColorLiteral | URLLiteral | BareWordLiteral
 	;
 
 NumberLiteral hidden():
@@ -277,11 +282,16 @@ ComponentColorLiteral:
 	//	either all percentages (with correct range), or all dimension-less integers 0-255
 	// validation on ComponentHSLColor:
 	//	all percentages (with correct range)
+	// TODO  can %  be optional for 0 (or 0.0)?
 
 enum ColorNames:
 	black | white // | ...
 	;
 	// TODO  generate into this grammar to provide content assist/code completion
+
+URLLiteral:
+	value=URL
+	;
 
 // something we don't know about:
 BareWordLiteral:
@@ -314,11 +324,12 @@ terminal HASH_ID: '#' PREFIXABLE_ID_START ID_PART* ;
 terminal DOT_ID: '.' PREFIXABLE_ID_START ID_PART* ;
 	// CSSValueConverterService#DOT_ID takes care of removing the '.'
 
-// special terminal for namespace references:
-terminal PIPE_ID: '|' PREFIXABLE_ID_START ID_PART* ;
-
 terminal URL: 'url(' -> ')' ;
-	// CSSValueConverterService#URL takes care of removing the 'url(' WS .. WS ')
+	/*
+	 * CSSValueConverterService#URL takes care of removing the whitespace so that
+	 * the rule effectively becomes: 'url(' WS? .. WS? ')
+	 */
+	// TODO  validation on url itself
 
 terminal INT returns ecore::EInt: ('-')? DEC_DIGIT+ ;
 
@@ -334,12 +345,20 @@ terminal fragment ID_START: PREFIXABLE_ID_START | '-';
 
 terminal fragment PREFIXABLE_ID_START: ('a'..'z'|'A'..'Z'|'_') ;
 
-terminal STRING	: 
+terminal STRING	: // copied from common.Terminals grammar
 			'"' ( '\\' ('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|'"') )* '"' |
 			"'" ( '\\' ('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|"'") )* "'"
 		;
 
-terminal ML_COMMENT	: '/*' -> '*/' ;
+terminal ML_COMMENT	: '/*' -> '*/' ; // copied from common.Terminals grammar
 
 terminal WS			: (' '|'\t'|'\r'|'\n')+ ;	// TODO  add '\f' without causing Xtext generation problems
+
+
+/*
+ * Roadmap:
+ * 
+ * 	1) W3C compliant lexing
+ *  2) W3C specification harvesting -> generate into grammar
+ */
 
