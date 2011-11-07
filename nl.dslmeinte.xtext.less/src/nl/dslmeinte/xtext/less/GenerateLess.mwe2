@@ -59,7 +59,9 @@ Workflow {
 //                composedCheck = "org.eclipse.xtext.validation.NamesAreUniqueValidator"
             }
 
-            fragment = scoping.ImportURIScopingFragment {}
+            fragment = scoping.ImportURIScopingFragment {
+            	generateStub = false
+            }
             fragment = nl.dslmeinte.xtext.CorrectedSimpleNamesFragment {}
 
             fragment = builder.BuilderIntegrationFragment {}

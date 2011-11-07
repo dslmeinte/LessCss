@@ -8,12 +8,12 @@ import org.eclipse.xtext.scoping.IScope
 import org.eclipse.xtext.scoping.Scopes
 import org.eclipse.xtext.scoping.impl.AbstractDeclarativeScopeProvider
 
-class LessScopeProviderImpl extends AbstractDeclarativeScopeProvider {
+class LessScopeProvider extends AbstractDeclarativeScopeProvider {
 
 	@Inject
 	extension LessLanguageHelper lessLanguageHelper
 
-	// TODO  use my AbstractDeclarateAnnotationBasedScopeProvider here
+	// TODO  use my AbstractDeclarateAnnotationBasedScopeProvider here?
 	def IScope scope_MixinCall_ruleSet(LessFile lessFile, EReference ref) {
 		Scopes::scopeFor(lessFile.mixinCandidates, [ it | it.qName ], IScope::NULLSCOPE)
 	}
