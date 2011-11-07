@@ -44,7 +44,7 @@ ExtendedRuleSet:
 	'}'
 	;
 	/*
-	 * The RuleSetMember now hang a maximally-unbalanced, right-sided parse/node tree.
+	 * The RuleSetMember-s now hang off a maximally-unbalanced, right-sided parse/node tree.
 	 * This weird construct is necessary to make the semi-colon a separating everything
 	 * other than nested rule sets, rather than a delimiting token
 	 * - in which case the final semi-colon would be required, rather than optional.
@@ -63,7 +63,7 @@ TailSimpleSelector returns css::SimpleSelector:	// synthetic type to limit choic
 	IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector | ParentCombinator
 	;
 
-ParentCombinator returns css::SimpleSelector:	// used in Less grammar (needs validation for when used in CSS file!)
+ParentCombinator returns css::SimpleSelector:
 	{ParentCombinator} '&'
 	;
 
@@ -137,7 +137,7 @@ ColorFunctionExpression returns ValueExpression:
 	  PrimaryValueExpression
 	| {ColorFunctionCall} function=ColorFunctions '(' color=ValueExpression ',' modifier=NumberLiteral ')'
 	;
-	// TODO  validation
+	// TODO  validation (requires evaluation engine)
 
 enum ColorFunctions:
 	  lighten | darken
@@ -170,7 +170,7 @@ ComponentColorLiteral:
 	  {ComponentRGBColor} 'rgb' '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ')'
 	| {ComponentHSLColor} 'hsl' '(' hue=ValueExpression ',' saturation=ValueExpression ',' lightness=ValueExpression ')'
 	;
-	// TODO  validation
+	// TODO  validation (requires evaluation engine)
 
 
 /*
@@ -194,4 +194,5 @@ terminal JAVASCRIPT_EVAL: '`' -> '`' ;
  */
 
 // TODO  validation on STRINGs to check whether interpolation syntax is correct
+//			(appear in .value of css::StringLiteral and css::AttributeSelector)
 
