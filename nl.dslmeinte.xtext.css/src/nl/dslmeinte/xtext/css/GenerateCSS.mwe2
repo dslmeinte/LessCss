@@ -39,7 +39,7 @@ Workflow {
             fragment = ecore.EcoreGeneratorFragment {}
 
             fragment = serializer.SerializerFragment {
-            	generateStub = false
+//            	generateStub = false
             }
 
             fragment = resourceFactory.ResourceFactoryFragment {

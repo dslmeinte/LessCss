@@ -14,55 +14,55 @@ import org.eclipse.emf.ecore.EObject
 class LessLanguageHelper {
 
 	def mixinCandidates(LessFile it) {
-		ruleSets.filter [canBeMixin]
+		it.ruleSets.filter(rs|rs.canBeMixin)
 	}
 
-	def private canBeMixin(ExtendedRuleSet it) {
-		atomicClassName != null
+	def /* private */ canBeMixin(ExtendedRuleSet it) {
+		it.atomicClassName != null
 	}
 
 	def namespaceCandidates(LessFile it) {
-		ruleSets.filter [canBeNamespace]
+		it.ruleSets.filter(rs|rs.canBeNamespace)
 	}
 
-	def private canBeNamespace(ExtendedRuleSet it) {
-		atomicID != null
+	def /* private */ canBeNamespace(ExtendedRuleSet it) {
+		it.atomicID != null
 	}
 
-	def private ruleSets(LessFile it) {
-		statements.filter(typeof(ExtendedRuleSet))
+	def /* private */ ruleSets(LessFile it) {
+		it.statements.filter(typeof(ExtendedRuleSet))
 	}
 
 	@Inject
 	extension IQualifiedNameConverter qNameConverter
 
 	def qNameMixin(ExtendedRuleSet it) {
-		if( atomicClassName == null ) {
+		if( it.atomicClassName == null ) {
 			throw new IllegalArgumentException("can only compute q-name for rule set that can act as mixin")
 		}
-		atomicClassName.toQualifiedName
+		it.atomicClassName.toQualifiedName
 	}
 
 	def qNameNamespace(ExtendedRuleSet it) {
-		if( atomicID == null ) {
+		if( it.atomicID == null ) {
 			throw new IllegalArgumentException("can only compute q-name for rule set that can act as namespace")
 		}
-		atomicID.toQualifiedName
+		it.atomicID.toQualifiedName
 	}
 
-	def private atomicClassName(ExtendedRuleSet it) {
-		atomicSelector(typeof(ClassSelector))
+	def /* private */ atomicClassName(ExtendedRuleSet it) {
+		it.atomicSelector(typeof(ClassSelector))
 	}
 
-	def private atomicID(ExtendedRuleSet it) {
-		atomicSelector(typeof(IDSelector))
+	def /* private */ atomicID(ExtendedRuleSet it) {
+		it.atomicSelector(typeof(IDSelector))
 	}
 
-	def private atomicSelector(ExtendedRuleSet it, Class<? extends EObject> clazz) {
-		if( selectors.size != 1 ) {
+	def /* private */ atomicSelector(ExtendedRuleSet it, Class<? extends EObject> clazz) {
+		if( it.selectors.size != 1 ) {
 			return null
 		}
-		val firstSelector = selectors.head
+		val firstSelector = it.selectors.head
 		if( !(firstSelector instanceof SimpleSelectorSequence) ) {
 			return null
 		}
@@ -82,7 +82,7 @@ class LessLanguageHelper {
 	 * Flattens the members of a rule set to a list,
 	 * instead of a maximally-unbalanced tree.
 	 */
-	def private Iterable<RuleSetMember> members(ExtendedRuleSet ruleSet) {
+	def /* private */ Iterable<RuleSetMember> members(ExtendedRuleSet ruleSet) {
 		val list = new ArrayList<RuleSetMember>();
 
 		var memberWrapper = ruleSet.firstMemberWrapper

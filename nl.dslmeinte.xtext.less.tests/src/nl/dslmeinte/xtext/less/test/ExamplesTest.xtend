@@ -8,9 +8,9 @@ import org.junit.Assert
 
 class ExamplesTest extends AbstractXtextTests {
 
-	private Diagnostician diagnostician
+	/* private */ Diagnostician diagnostician
 
-	override protected setUp() {
+	override /* protected */ setUp() {
 		super.setUp()
 		with(typeof(LessStandaloneSetup));
 		diagnostician = new Diagnostician()
@@ -42,17 +42,17 @@ class ExamplesTest extends AbstractXtextTests {
 		}
 	}
 
-	def private print(Diagnostic it, String type) {
-		println( '''LÇlineÈÇsafeColumnÈ		ÇtypeÈ		ÇmessageÈ'''.toString )
+	def /* private */ print(Diagnostic it, String type) {
+		println( '''LÇit.lineÈÇit.safeColumnÈ		ÇtypeÈ		Çit.messageÈ'''.toString )
 	}
 
-	def private print(org.eclipse.emf.common.util.Diagnostic it) {
-		println( '''ÇseverityÈ	ÇmessageÈ'''.toString )		// TODO  map severity int -> String
+	def /* private */ print(org.eclipse.emf.common.util.Diagnostic it) {
+		println( '''Çit.severityÈ	Çit.messageÈ'''.toString )		// TODO  map severity int -> String
 	}
 
-	def private safeColumn(Diagnostic it) {
+	def /* private */ safeColumn(Diagnostic it) {
 		try {
-			"@" + column
+			"@" + it.column
 		} catch( UnsupportedOperationException e ) {
 			""
 		}

@@ -7,9 +7,9 @@ import org.junit.Assert
 
 class SelectorsTests extends AbstractXtextTests {
 
-	private Diagnostician diagnostician
+	/* private */ Diagnostician diagnostician
 
-	override protected setUp() {
+	override /* protected */ setUp() {
 		super.setUp()
 		with(typeof(CSSStandaloneSetup));
 		diagnostician = new Diagnostician()
@@ -21,7 +21,7 @@ class SelectorsTests extends AbstractXtextTests {
 		val issues = diagnostician.validate(cssFile).children
 		if( issues.size > 0 ) {
 			// FIXME  the following won't output something?!
-			issues.map [println(it.message)]
+			issues.map( it | println(it.message) )
 			Assert::fail
 		}
 	}
