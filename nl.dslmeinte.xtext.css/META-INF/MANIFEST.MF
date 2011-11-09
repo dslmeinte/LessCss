@@ -32,4 +32,5 @@ Export-Package: nl.dslmeinte.xtext.css,
  nl.dslmeinte.xtext.css.parser.antlr.internal,
  nl.dslmeinte.xtext.css.validation,
  nl.dslmeinte.xtext.css.scoping,
- nl.dslmeinte.xtext.css.formatting
+ nl.dslmeinte.xtext.css.formatting,
+ nl.dslmeinte.xtext.css.parser.antlr.lexer

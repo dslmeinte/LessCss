@@ -46,8 +46,8 @@ Workflow {
                 fileExtensions = file.extensions
             }
 
-            fragment = parser.antlr.XtextAntlrGeneratorFragment {
-//            	options = { ignoreCase=true }
+            fragment = parser.antlr.ex.rt.AntlrGeneratorFragment {
+            	options = { ignoreCase=true }
             }
 
             fragment = validation.JavaValidatorFragment {
@@ -68,8 +68,8 @@ Workflow {
             fragment = outline.QuickOutlineFragment {}
             fragment = quickfix.QuickfixProviderFragment {}
             fragment = contentAssist.JavaBasedContentAssistFragment {}
-            fragment = parser.antlr.XtextAntlrUiGeneratorFragment {
-//            	options = { ignoreCase=true }
+            fragment = parser.antlr.ex.ca.ContentAssistParserGeneratorFragment {
+            	options = { ignoreCase=true }
             }
             fragment = templates.CodetemplatesGeneratorFragment {}
 

@@ -6,10 +6,9 @@
  * This implementation does not completely comply with the W3C specification, since
  * it's a work-in-progress. Notable global aspects that are missing:
  * 
- * 	- case-insensitivity
  * 	- complete compliance with respect to lexical scanning (tokenization)
- *  - media queries
  *  - full knowledge of CSS style attributes
+ *  - media queries
  * 
  * It is my intention to generate this grammar partially from a CSS definition.
  */
