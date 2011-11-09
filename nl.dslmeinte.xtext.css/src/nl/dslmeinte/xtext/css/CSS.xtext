@@ -302,10 +302,9 @@ ComponentColorLiteral:
 	| {ComponentHSLColor} 'hsl' '(' hue=NumberLiteral ',' saturation=NumberLiteral ',' lightness=NumberLiteral ')'
 	;
 	// validation on ComponentRGBColor:
-	//	either all percentages (with correct range), or all dimension-less integers 0-255
+	//	either all percentages (with correct range, and non-optional % for 0[.0]), or all dimension-less integers 0-255
 	// validation on ComponentHSLColor:
-	//	all percentages (with correct range)
-	// TODO  can %  be optional for 0 (or 0.0)?
+	//	all percentages (with correct range, and non-optional % for 0[.0])
 
 enum ColorNames:
 	black | white // | ...
@@ -349,7 +348,7 @@ terminal DOT_ID: '.' PREFIXABLE_ID_START ID_PART* ;
 terminal URL: 'url(' -> ')' ;
 	/*
 	 * CSSValueConverterService#URL takes care of removing the whitespace so that
-	 * the rule effectively becomes: 'url(' WS? .. WS? ')
+	 * the rule effectively becomes: 'url(' WS? .. WS? ')' with WS hidden (transiently)
 	 */
 	// TODO  validation on url itself
 
