@@ -12,8 +12,8 @@ import com.google.inject.Inject;
 
 public class CSSValueConverterService extends AbstractDeclarativeValueConverterService {
 
-	@ValueConverter(rule="RGB_COLOR")
-	public IValueConverter<String> RGB_COLOR() {
+	@ValueConverter(rule="HEX_COLOR")
+	public IValueConverter<String> HEX_COLOR() {
 		return new IValueConverter<String>() {
 			@Override
 			public String toString(String value) {

@@ -9,7 +9,7 @@ LessFile:
 	statements+=Statement*;
 
 Statement:
-	(VariableDefinition ';') | ExtendedRuleSet | VisibleComment | Import
+	(VariableDefinition ';') | ExtendedRuleSet | VisibleComment | ImportDeclaration
 	;
 
 VariableDefinition:
@@ -24,7 +24,7 @@ VisibleComment:
 	comment=ML_COMMENT
 	;
 
-Import:
+ImportDeclaration:
 	'@import' importURI=STRING
 	;
 	// TODO  tweak ImportUriGlobalScopeProvider to check on the importURI's extension and behave accordingly
@@ -81,7 +81,7 @@ RuleSetMember:	// convenience super type
 	;
 
 SemiColonSeparatedExtendedRuleSetMember:
-	MixinCall | PropertyExpression | VariableDefinition
+	MixinCall | ExpressiveDeclaration | VariableDefinition
 	;
 
 MixinCall:
@@ -94,16 +94,16 @@ MixinCall:
 	// scoping of .group: all ExtendedRuleSets which have a single ID-name
 	// scoping of .ruleSet: all mixin candidates
 
-PropertyExpression:
-	KnownPropertyExpression | UnknownPropertyExpression
+ExpressiveDeclaration:
+	KnownPropertyExpressiveDeclaration | UnknownPropertyExpressiveDeclaration
 	;
 
-KnownPropertyExpression:
+KnownPropertyExpressiveDeclaration:
 	name=KnownProperties ':' values+=ValueExpression+
 	;
 
-UnknownPropertyExpression:
-	name=ID ':' values+=ValueExpression+
+UnknownPropertyExpressiveDeclaration:
+	name=IDENT ':' values+=ValueExpression+
 	;
 
 

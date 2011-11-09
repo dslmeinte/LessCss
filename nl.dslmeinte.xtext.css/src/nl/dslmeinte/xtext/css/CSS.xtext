@@ -5,8 +5,12 @@
  * 
  * This implementation does not completely comply with the W3C specification, since
  * it's a work-in-progress. Notable global aspects that are missing:
+ * 
  * 	- case-insensitivity
  * 	- complete compliance with respect to lexical scanning (tokenization)
+ *  - media queries
+ *  - full knowledge of CSS style attributes
+ * 
  * It is my intention to generate this grammar partially from a CSS definition.
  */
 
@@ -18,26 +22,46 @@ generate css "http://www.dslmeinte.nl/xtext/css"
 import "http://www.eclipse.org/emf/2002/Ecore" as ecore
 
 
-CSSFile:
+/*
+ * +------------------------------+
+ * | CSS2.1 document-level syntax |
+ * +------------------------------+
+ * 
+ * see: http://www.w3.org/TR/CSS21/grammar.html
+ */
+
+Stylesheet:
+	( '@charset' charSet=STRING )?
+	imports+=ImportDeclaration*
 	statements+=Statement*
 	;
+	// TODO  CDO/CDC stuff (i.e. '<!--' vs. '-->')
 
 Statement:
-	Import | NamespaceDeclaration | RuleSet
+	RuleSet | MediaDeclaration | PageDeclaration | NamespaceDeclaration
 	;
 
-Import:
-	'@import' importURI=STRING
+ImportDeclaration:
+	'@import' importURI=STRING media+=IDENT (',' media+=IDENT)* ';'
+	;
+
+MediaDeclaration:
+	'@media' media+=IDENT (',' media+=IDENT)* '{' ruleSets+=RuleSet* '}'
+	;
+
+PageDeclaration:
+	'@page' (':' pseudoPage=IDENT)?
+	'{' declarations+=Declaration (';' declarations+=Declaration)* '}'
 	;
 
 NamespaceDeclaration:
-	'@namespace' name=ID? url=(STRING|URL) ';'
+	'@namespace' name=IDENT? url=(STRING|URL) ';'
 	;
 
 RuleSet:
 	selectors+=Selector (',' selectors+=Selector)* '{'	// ~ selectors_group
 		(
-			propertyValues+=PropertyValue (';' propertyValues+=PropertyValue)* ';'?
+			declarations+=Declaration (';' declarations+=Declaration)*
 		)?
 	'}'
 	;
@@ -46,16 +70,16 @@ RuleSet:
 	 * since whitespace following a SelectorExpression is hidden.
 	 */
 
-PropertyValue:
-	KnownPropertyValue | UnknownPropertyValue
+Declaration:
+	KnownPropertyDeclaration | UnknownPropertyDeclaration
 	;
 
-KnownPropertyValue:
-	name=KnownProperties ':' values+=ValueLiteral+
+KnownPropertyDeclaration:
+	name=KnownProperties ':' values+=ValueLiteral+ important?='!important'?
 	;
 
-UnknownPropertyValue:
-	name=ID ':' values+=ValueLiteral+
+UnknownPropertyDeclaration:
+	name=IDENT ':' values+=ValueLiteral+ important?='!important'?
 	;
 
 enum KnownProperties:
@@ -112,11 +136,11 @@ SimpleSelector:		// convenience super type, also references by Less grammar
 	;
 
 TypeSelector:
-	(namespacePrefix=NamespacePrefix)? ( knownType=HtmlElements | unknownType=ID )
+	(namespacePrefix=NamespacePrefix)? ( knownType=HtmlElements | unknownType=IDENT )
 	;
 
 NamespacePrefix:
-	  ( {NamespacePrefix} namespace=[NamespaceDeclaration|ID] | {UniversalNamespacePrefix} '*' ) '|'
+	  ( {NamespacePrefix} namespace=[NamespaceDeclaration|IDENT] | {UniversalNamespacePrefix} '*' ) '|'
 	| {WithoutNamespacePrefix} '|'
 	;
 
@@ -131,13 +155,13 @@ UniversalSelector:
 
 AttributeSelector hidden(WS):
 	'['
-		attribute=Attribute ( matcher=AttributeSelectorMatchers value=(ID|STRING) )?	// !matcher.eIsSet means: AttributePresenceSelector
+		attribute=Attribute ( matcher=AttributeSelectorMatchers value=(IDENT|STRING) )?	// !matcher.eIsSet means: AttributePresenceSelector
 	']'
 	;
 	// TODO  try to find a solution which has better hierarchy (e.g., AttributeValueSelector and AttributePresenceSelector)
 
 Attribute hidden():
-	(namespacePrefix=NamespacePrefix)? name=ID
+	(namespacePrefix=NamespacePrefix)? name=IDENT
 	;
 
 enum AttributeSelectorMatchers:
@@ -150,7 +174,7 @@ enum AttributeSelectorMatchers:
 	;
 
 IDSelector:
-	name=(HASH_ID|RGB_COLOR)	// RGB_COLOR has priority but is otherwise subsumed by HASH_ID
+	name=(HASH_ID|HEX_COLOR)	// RGB_COLOR has priority but is otherwise subsumed by HASH_ID
 	;
 
 ClassSelector:
@@ -193,7 +217,7 @@ enum PseudoElements:
 	// validation: warning if "legacy" pseudo-element is used with only a single semi-colon
 
 LanguagePseudoClassSelector hidden():
-	'lang(' langugageId=ID ')'
+	'lang(' langugageId=IDENT ')'
 	;
 	// validation: language matches /\w+(-\w+)?/
 
@@ -269,7 +293,7 @@ StringLiteral:
 	;
 
 ColorLiteral:
-	  {RGBColor} rgb=RGB_COLOR
+	  {RGBColor} rgb=HEX_COLOR
 	| {NamedColor} color=ColorNames
 	| ComponentColorLiteral
 	;
@@ -295,7 +319,7 @@ URLLiteral:
 
 // something we don't know about:
 BareWordLiteral:
-	bareWord=ID
+	bareWord=IDENT
 	;
 
 
@@ -305,7 +329,7 @@ BareWordLiteral:
  * +-----------+
  */
 
-terminal RGB_COLOR: '#' HEX_DIGIT+ ;
+terminal HEX_COLOR: '#' HEX_DIGIT+ ;
 	// validation: exactly 3 or 6 hex-digits
 	// CSSValueConverterService#RGB_COLOR takes care of removing the '#' and validation
 	/*
@@ -313,8 +337,7 @@ terminal RGB_COLOR: '#' HEX_DIGIT+ ;
 	 * since the latter subsumes the first.
 	 */
 
-// re-definition of ID to allow hyphens:
-terminal ID: ID_START ID_PART* ;
+terminal IDENT: ID_START ID_PART* ;
 
 // special terminal for ID..euhmm..id's:
 terminal HASH_ID: '#' PREFIXABLE_ID_START ID_PART* ;
