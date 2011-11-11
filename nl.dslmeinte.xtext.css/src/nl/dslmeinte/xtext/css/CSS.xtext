@@ -41,7 +41,7 @@ Statement:
 	;
 
 ImportDeclaration:
-	'@import' importURI=STRING media+=IDENT (',' media+=IDENT)* ';'
+	'@import' importURI=STRING ( media+=IDENT (',' media+=IDENT)* )? ';'
 	;
 
 MediaDeclaration:
@@ -60,25 +60,38 @@ NamespaceDeclaration:
 RuleSet:
 	selectors+=Selector (',' selectors+=Selector)* '{'	// ~ selectors_group
 		(
-			declarations+=Declaration (';' declarations+=Declaration)*
+			declarations+=Declaration (';' declarations+=Declaration)* (';')?
 		)?
 	'}'
 	;
 	/*
 	 * Note that this grammar is a little wider than the specification allows,
-	 * since whitespace following a SelectorExpression is hidden.
+	 * since whitespace following a Selector is hidden and especially since
+	 * a closing semi-colon is not considered illegal (which it is in the strict sense).
 	 */
 
 Declaration:
-	KnownPropertyDeclaration | UnknownPropertyDeclaration
+	KnownPropertyDeclaration | UnrecognizedPropertyDeclaration
 	;
 
 KnownPropertyDeclaration:
-	name=KnownProperties ':' values+=ValueLiteral+ important?='!important'?
+	name=KnownProperties ':' valuesLists=PropertyValuesLists
 	;
 
-UnknownPropertyDeclaration:
-	name=IDENT ':' values+=ValueLiteral+ important?='!important'?
+UnrecognizedPropertyDeclaration:
+	name=IDENT ':' valuesLists=PropertyValuesLists
+	;
+
+PropertyValuesLists:
+	lists+=PropertyValuesList (',' lists+=PropertyValuesList)*
+	;
+
+PropertyValuesList:
+	values+=PropertyValue+
+	;
+
+PropertyValue:
+	value=ValueLiteral important?='!important'?
 	;
 
 enum KnownProperties:
@@ -99,17 +112,9 @@ Selector:
 	CombinatorExpression
 	;
 
-SimpleSelectorSequence hidden():
-	  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=TailSimpleSelector* )
-	| (                                           simpleSelectors+=TailSimpleSelector+ )
-	;
-	 // validation: only last element may be a PseudoElementSelector (sub type of PseudoSelector)
+// TODO  make this a simpler, tail-recursive structure
 
-TailSimpleSelector returns SimpleSelector:	// synthetic type to limit choice for parser, without need for validation
-	IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector
-	;
-
-CombinatorExpression returns SelectorExpression hidden():
+CombinatorExpression returns Selector hidden():
 	SimpleSelectorSequence (
 		  {DescendantCombinator.left=current}		wsI=WS					right=SimpleSelectorSequence
 		| {ChildCombinator.left=current}			wsL=WS? '>' wsR=WS?		right=SimpleSelectorSequence
@@ -123,6 +128,18 @@ CombinatorExpression returns SelectorExpression hidden():
 	 * assign the specific combinator and surrounding whitespace so that the object
 	 * is re-serializable.
 	 */
+
+SimpleSelectorSequence returns Selector hidden():
+	{SimpleSelectorSequence} (
+		  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=TailSimpleSelector* )
+		| (                                           simpleSelectors+=TailSimpleSelector+ )
+	)
+	;
+	 // validation: only last element may be a PseudoElementSelector (sub type of PseudoSelector)
+
+TailSimpleSelector returns SimpleSelector:	// synthetic type to limit choice for parser, without need for validation
+	IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector
+	;
 
 SimpleSelector:		// convenience super type, also references by Less grammar
 	  TypeSelector
@@ -144,7 +161,7 @@ NamespacePrefix:
 	;
 
 enum HtmlElements:
-	a | pre | body
+	a | pre | body | li
 	;
 	// TODO  generate into this grammar to be able to provide better content assist/code completion
 
@@ -298,11 +315,14 @@ ColorLiteral:
 	;
 
 ComponentColorLiteral:
-	  {ComponentRGBColor} 'rgb' '(' red=NumberLiteral ',' green=NumberLiteral ',' blue=NumberLiteral ')'
-	| {ComponentHSLColor} 'hsl' '(' hue=NumberLiteral ',' saturation=NumberLiteral ',' lightness=NumberLiteral ')'
+	  {ComponentRGBColor}		'rgb'  '(' red=NumberLiteral ',' green=NumberLiteral ',' blue=NumberLiteral ')'
+	| {ComponentRGBAlphaColor}	'rgba' '(' red=NumberLiteral ',' green=NumberLiteral ',' blue=NumberLiteral ',' opacity=NumberLiteral ')'
+	| {ComponentHSLColor}		'hsl'  '(' hue=NumberLiteral ',' saturation=NumberLiteral ',' lightness=NumberLiteral ')'
 	;
 	// validation on ComponentRGBColor:
 	//	either all percentages (with correct range, and non-optional % for 0[.0]), or all dimension-less integers 0-255
+	// validation on ComponentRGBAlphaColor:
+	//	see ComponentRGBColor + opacity is a dimension-less number between 0.0 and 1.0
 	// validation on ComponentHSLColor:
 	//	all percentages (with correct range, and non-optional % for 0[.0])
 

@@ -94,5 +94,17 @@ class LessLanguageHelper {
 		list
 	}
 
+	/**
+	 * Computes a nesting of variables which are in scope.
+	 */
+	def variablesInNestedScope(EObject context) {
+		// ascend to level of ExtendedRuleSet or LessFile:
+		/*
+		 * Possible (inverse) containment trees:
+		 * VariableDeclaration
+		 * 		-> VariableDefinition.name -> ...
+		 */
+	}
+
 }
 

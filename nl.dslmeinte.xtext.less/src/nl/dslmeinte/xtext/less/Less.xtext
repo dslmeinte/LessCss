@@ -6,7 +6,10 @@ generate less "http://www.dslmeinte.nl/xtext/less"
 
 
 LessFile:
-	statements+=Statement*;
+	( '@charset' charSet=STRING )?
+//	imports+=ImportDeclaration*
+	statements+=Statement*
+	;
 
 Statement:
 	(VariableDefinition ';') | ExtendedRuleSet | VisibleComment | ImportDeclaration
@@ -28,6 +31,7 @@ ImportDeclaration:
 	'@import' importURI=STRING
 	;
 	// TODO  tweak ImportUriGlobalScopeProvider to check on the importURI's extension and behave accordingly
+	// TODO  make compatible with CSS def.
 
 
 /*
@@ -49,6 +53,8 @@ ExtendedRuleSet:
 	 * other than nested rule sets, rather than a delimiting token
 	 * - in which case the final semi-colon would be required, rather than optional.
 	 * (Having a semi-colon after a rule set is illegal.)
+	 * ((Note that having a semi-colon after the last declaration in a CSS block
+	 *   is technically illegal as well.))
 	 * 
 	 * Use LessLanguageHelper#members(ExtendedRuleSet) to obtain a linear list.
 	 */
@@ -85,7 +91,7 @@ SemiColonSeparatedExtendedRuleSetMember:
 	;
 
 MixinCall:
-	(group=[ExtendedRuleSet|HASH_ID] '>')? ruleSet=[ExtendedRuleSet|DOT_ID]
+	(group=[ExtendedRuleSet|HASH_ID] (childCombined?='>')?)? ruleSet=[ExtendedRuleSet|DOT_ID]
 		// TODO  ...but we may want to extended this to RuleSet as well,
 		//			if we consider regular rule sets in an imported .css file
 		//			as mixin candidates as well
@@ -93,17 +99,30 @@ MixinCall:
 	;
 	// scoping of .group: all ExtendedRuleSets which have a single ID-name
 	// scoping of .ruleSet: all mixin candidates
+	// TODO  verify that this is what less.js understands as well (incorporates a while-loop in the parser but only supports 1 level)
 
 ExpressiveDeclaration:
-	KnownPropertyExpressiveDeclaration | UnknownPropertyExpressiveDeclaration
+	KnownPropertyExpressiveDeclaration | UnrecognizedPropertyExpressiveDeclaration
 	;
 
 KnownPropertyExpressiveDeclaration:
-	name=KnownProperties ':' values+=ValueExpression+
+	name=KnownProperties ':' valuesLists=PropertyExpressionsLists
 	;
 
-UnknownPropertyExpressiveDeclaration:
-	name=IDENT ':' values+=ValueExpression+
+UnrecognizedPropertyExpressiveDeclaration:
+	name=IDENT ':' valuesLists=PropertyExpressionsLists
+	;
+
+PropertyExpressionsLists:
+	lists+=PropertyExpressionsList (',' lists+=PropertyExpressionsList)*
+	;
+
+PropertyExpressionsList:
+	values+=PropertyExpression+
+	;
+
+PropertyExpression:
+	value=ValueExpression important?='!important'?
 	;
 
 
@@ -149,6 +168,7 @@ ColorFunctionCall:
 	| {OneArgFunctionCall}	function=OneArgColorFunctions	'(' color=ValueExpression ')'
 	;
 	// TODO  validation (requires evaluation engine)
+	// TODO  consider incorporating IE's legacy "alpha(opacity=...)" function as well
 
 enum TwoArgsColorFunctions:
 	  lighten | darken
@@ -172,8 +192,9 @@ VariableReference hidden():
 
 // re-def. from CSS grammar to make it possible to use expressions:
 ComponentColorLiteral:
-	  {ComponentRGBColor} 'rgb' '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ')'
-	| {ComponentHSLColor} 'hsl' '(' hue=ValueExpression ',' saturation=ValueExpression ',' lightness=ValueExpression ')'
+	  {ComponentRGBColor}		'rgb'  '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ')'
+	| {ComponentRGBAlphaColor}	'rgba' '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ',' opacity=ValueExpression ')'
+	| {ComponentHSLColor}		'hsl'  '(' hue=ValueExpression ',' saturation=ValueExpression ',' lightness=ValueExpression ')'
 	;
 	// TODO  validation (requires evaluation engine)
 
