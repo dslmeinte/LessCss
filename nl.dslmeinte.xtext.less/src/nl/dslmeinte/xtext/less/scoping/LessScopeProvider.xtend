@@ -12,7 +12,7 @@ import org.eclipse.xtext.scoping.impl.AbstractDeclarativeScopeProvider
 class LessScopeProvider extends AbstractDeclarativeScopeProvider {
 
 	@Inject
-	extension LessLanguageHelper lessLanguageHelper
+	extension LessLanguageHelper
 
 	def IScope scope_MixinCall_group(LessFile lessFile, EReference ref) {
 		Scopes::scopeFor(lessFile.namespaceCandidates, [ it | it.qNameNamespace ], IScope::NULLSCOPE)
