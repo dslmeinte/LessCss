@@ -21,5 +21,6 @@ class LessScopeProvider extends AbstractDeclarativeScopeProvider {
 	def IScope scope_MixinCall_ruleSet(LessFile lessFile, EReference ref) {
 		Scopes::scopeFor(lessFile.mixinCandidates, [ it | it.qNameMixin ], IScope::NULLSCOPE)
 	}
+	// TODO  make this recursive and built up a hierarchy of scopes, reflecting nesting
 
 }

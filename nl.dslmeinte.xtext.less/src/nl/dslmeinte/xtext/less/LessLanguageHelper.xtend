@@ -3,13 +3,13 @@ package nl.dslmeinte.xtext.less
 import com.google.inject.Inject
 import java.util.ArrayList
 import nl.dslmeinte.xtext.css.css.ClassSelector
-import nl.dslmeinte.xtext.css.css.SimpleSelectorSequence
+import nl.dslmeinte.xtext.css.css.IDSelector
 import nl.dslmeinte.xtext.less.less.ExtendedRuleSet
 import nl.dslmeinte.xtext.less.less.LessFile
 import nl.dslmeinte.xtext.less.less.RuleSetMember
-import org.eclipse.xtext.naming.IQualifiedNameConverter
-import nl.dslmeinte.xtext.css.css.IDSelector
+import nl.dslmeinte.xtext.less.less.SimpleSelectorSequence
 import org.eclipse.emf.ecore.EObject
+import org.eclipse.xtext.naming.IQualifiedNameConverter
 
 class LessLanguageHelper {
 
@@ -58,6 +58,10 @@ class LessLanguageHelper {
 		atomicSelector(typeof(IDSelector))
 	}
 
+	/**
+	 * @returns The name of the atomic selector of the given class
+	 * 			or {@code null} if the selector doesn't conform to that pattern.
+	 */
 	def private atomicSelector(ExtendedRuleSet it, Class<? extends EObject> clazz) {
 		if( selectors.size != 1 ) {
 			return null
@@ -74,7 +78,7 @@ class LessLanguageHelper {
 		if( !clazz.isAssignableFrom(simpleSelector.^class) ) {
 			return null
 		}
-		// rely on EMF:
+		// rely on EMF to get 'name' feature:
 		simpleSelector.eGet(simpleSelector.eClass.getEStructuralFeature("name")) as String
 	}
 

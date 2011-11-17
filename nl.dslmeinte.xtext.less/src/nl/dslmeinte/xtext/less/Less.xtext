@@ -87,7 +87,7 @@ RuleSetMember:	// convenience super type
 	;
 
 SemiColonSeparatedExtendedRuleSetMember:
-	MixinCall | ExpressiveDeclaration | VariableDefinition
+	MixinCall | ExpressivePropertyDeclaration | VariableDefinition
 	;
 
 MixinCall:
@@ -101,7 +101,7 @@ MixinCall:
 	// scoping of .ruleSet: all mixin candidates
 	// TODO  verify that this is what less.js understands as well (incorporates a while-loop in the parser but only supports 1 level)
 
-ExpressiveDeclaration:
+ExpressivePropertyDeclaration:
 	KnownPropertyExpressiveDeclaration | UnrecognizedPropertyExpressiveDeclaration
 	;
 
@@ -121,7 +121,7 @@ PropertyExpressionsList:
 	values+=PropertyExpression+
 	;
 
-PropertyExpression:
+PropertyExpression hidden(WS):
 	value=ValueExpression important?='!important'?
 	;
 
