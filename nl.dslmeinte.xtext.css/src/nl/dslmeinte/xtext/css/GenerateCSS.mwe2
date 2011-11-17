@@ -60,7 +60,7 @@ Workflow {
 
             fragment = formatting.FormatterFragment {}
 
-//            fragment = junit.Junit4Fragment {}
+            fragment = junit.Junit4Fragment {}
 
             fragment = builder.BuilderIntegrationFragment {}
             fragment = labeling.LabelProviderFragment {}
