@@ -1,6 +1,7 @@
 package nl.dslmeinte.xtext.less.validation;
 
 import nl.dslmeinte.xtext.css.css.AttributeSelector;
+import nl.dslmeinte.xtext.css.css.StringAttributeValueLiteral;
 import nl.dslmeinte.xtext.css.css.StringLiteral;
 
 import org.eclipse.xtext.validation.Check;
@@ -9,8 +10,10 @@ public class LessJavaValidator extends AbstractLessJavaValidator {
 
 	@Check
 	public void checkStringInterpolation(AttributeSelector attributeSelector) {
-		// .value is ID or STRING: ID can't have interpolation characters lexer-wise, so check .value as-is:
-		checkStringInterpolation(attributeSelector.getValue());
+		// .value is ID, STRING or INT: ID and INT can't have interpolation characters lexer-wise, so check .value as-is:
+		if( attributeSelector.getValue() instanceof StringAttributeValueLiteral ) {
+			checkStringInterpolation(((StringAttributeValueLiteral) attributeSelector.getValue()).getValue());
+		}
 	}
 
 	@Check

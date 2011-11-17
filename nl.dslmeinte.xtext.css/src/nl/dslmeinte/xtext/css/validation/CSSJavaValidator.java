@@ -19,7 +19,7 @@ public class CSSJavaValidator extends AbstractCSSJavaValidator {
 
 	private static final CssPackage ePackage = CssPackage.eINSTANCE;
 
-	private static final Matcher languagePatternMatcher = Pattern.compile("\\w(-\\w)?").matcher("");
+	private static final Matcher languagePatternMatcher = Pattern.compile("\\w+(-\\w+)?").matcher("");
 
 	@Check
 	public void checkLanguageId(LanguagePseudoClassSelector languageSelector) {

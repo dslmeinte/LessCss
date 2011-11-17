@@ -30,47 +30,64 @@ import "http://www.eclipse.org/emf/2002/Ecore" as ecore
  */
 
 Stylesheet:
-	( '@charset' charSet=STRING )?
+	( '@charset' charSet=STRING ';' )?
 	imports+=ImportDeclaration*
-	statements+=Statement*
+	statements+=CSSTopLevelStatement*
 	;
 	// TODO  CDO/CDC stuff (i.e. '<!--' vs. '-->')
 
-Statement:
-	RuleSet | MediaDeclaration | PageDeclaration | NamespaceDeclaration
+CSSTopLevelStatement:
+	RuleSet | CSSOtherTopLevelDeclaration
+	;
+
+CSSOtherTopLevelDeclaration:
+	MediaDeclaration | PageDeclaration | NamespaceDeclaration | FontFaceDeclaration
 	;
 
 ImportDeclaration:
-	'@import' importURI=STRING ( media+=IDENT (',' media+=IDENT)* )? ';'
+	'@import' importURI=(STRING|URL) ( media+=IDENT (',' media+=IDENT)* )? ';'
 	;
 
 MediaDeclaration:
 	'@media' media+=IDENT (',' media+=IDENT)* '{' ruleSets+=RuleSet* '}'
 	;
+	// TODO  add media queries
 
 PageDeclaration:
-	'@page' (':' pseudoPage=IDENT)?
-	'{' declarations+=Declaration (';' declarations+=Declaration)* '}'
+	'@page' (':' pseudoPage=IDENT)? body=RuleSetBody
 	;
 
 NamespaceDeclaration:
 	'@namespace' name=IDENT? url=(STRING|URL) ';'
 	;
 
+FontFaceDeclaration:
+	'@font-face' body=RuleSetBody	// TODO  make this more specific for @font-face
+	;
+
 RuleSet:
-	selectors+=Selector (',' selectors+=Selector)* '{'	// ~ selectors_group
-		(
-			declarations+=Declaration (';' declarations+=Declaration)* (';')?
-		)?
-	'}'
+	selectors+=Selector (',' selectors+=Selector)* // ~ selectors_group
+	body=RuleSetBody
 	;
 	/*
 	 * Note that this grammar is a little wider than the specification allows,
-	 * since whitespace following a Selector is hidden and especially since
-	 * a closing semi-colon is not considered illegal (which it is in the strict sense).
+	 * since whitespace following a Selector is hidden.
 	 */
 
-Declaration:
+RuleSetBody:
+	{RuleSetBody}
+	'{'
+		(
+			declarations+=PropertyDeclaration (';' declarations+=PropertyDeclaration)* (';')?
+		)?
+	'}'
+	;
+	/**
+	 * Note that this grammar is a little wider than the specification allows,
+	 * since a closing semi-colon is not considered illegal (which it is in the strict sense).
+	 */
+
+PropertyDeclaration:
 	KnownPropertyDeclaration | UnrecognizedPropertyDeclaration
 	;
 
@@ -79,7 +96,11 @@ KnownPropertyDeclaration:
 	;
 
 UnrecognizedPropertyDeclaration:
-	name=IDENT ':' valuesLists=PropertyValuesLists
+	name=PropertyName ':' valuesLists=PropertyValuesLists
+	;
+
+PropertyName:
+	IDENT | 'empty'		// TODO  add other keywords here
 	;
 
 PropertyValuesLists:
@@ -90,7 +111,7 @@ PropertyValuesList:
 	values+=PropertyValue+
 	;
 
-PropertyValue:
+PropertyValue hidden(WS):
 	value=ValueLiteral important?='!important'?
 	;
 
@@ -114,7 +135,7 @@ Selector:
 
 // TODO  make this a simpler, tail-recursive structure
 
-CombinatorExpression returns Selector hidden():
+CombinatorExpression returns Selector hidden():		// TODO  add ML_COMMENTS
 	SimpleSelectorSequence (
 		  {DescendantCombinator.left=current}		wsI=WS					right=SimpleSelectorSequence
 		| {ChildCombinator.left=current}			wsL=WS? '>' wsR=WS?		right=SimpleSelectorSequence
@@ -152,18 +173,19 @@ SimpleSelector:		// convenience super type, also references by Less grammar
 	;
 
 TypeSelector:
-	(namespacePrefix=NamespacePrefix)? ( knownType=HtmlElements | unknownType=IDENT )
+	(namespacePrefix=NamespacePrefix)? type=IDENT
 	;
+	// validation: check (warning) whether type is a known HTML element
+	/*
+	 * We don't want to know about all HTML elements since each element's name
+	 * would become a keyword in the language, so we'd have to quote them
+	 * explicitly at numerous spots.
+	 */
 
 NamespacePrefix:
 	  ( {NamespacePrefix} namespace=[NamespaceDeclaration|IDENT] | {UniversalNamespacePrefix} '*' ) '|'
 	| {WithoutNamespacePrefix} '|'
 	;
-
-enum HtmlElements:
-	a | pre | body | li
-	;
-	// TODO  generate into this grammar to be able to provide better content assist/code completion
 
 UniversalSelector:
 	{UniversalSelector} (namespacePrefix=NamespacePrefix)? '*'
@@ -171,7 +193,7 @@ UniversalSelector:
 
 AttributeSelector hidden(WS):
 	'['
-		attribute=Attribute ( matcher=AttributeSelectorMatchers value=(IDENT|STRING) )?	// !matcher.eIsSet means: AttributePresenceSelector
+		attribute=Attribute ( matcher=AttributeSelectorMatchers value=AttributeValueLiteral )?	// !matcher.eIsSet means: AttributePresenceSelector
 	']'
 	;
 	// TODO  try to find a solution which has better hierarchy (e.g., AttributeValueSelector and AttributePresenceSelector)
@@ -189,6 +211,13 @@ enum AttributeSelectorMatchers:
 	| language='|='	// TODO  check name
 	;
 
+AttributeValueLiteral:
+	  {StringAttributeValueLiteral} value=(IDENT|STRING)
+	| {IntegerAttributeValueLiteral} value=INT
+	| {DecimalAttributeValueLiteral} value=DECIMAL
+	;
+	// TODO  check whether this complies with CSS def.!
+
 IDSelector:
 	name=(HASH_ID|HEX_COLOR)	// RGB_COLOR has priority but is otherwise subsumed by HASH_ID
 	;
@@ -198,7 +227,6 @@ ClassSelector:
 	;
 
 PseudoSelector:
-	':'
 	(
 		  NoArgsPseudoClassSelector
 		| PseudoElementSelector
@@ -208,7 +236,7 @@ PseudoSelector:
 	;
 
 NoArgsPseudoClassSelector hidden():
-	pseudo=NoArgsPseudos
+	':' pseudo=NoArgsPseudos
 	;
 
 enum NoArgsPseudos:
@@ -223,7 +251,7 @@ enum NoArgsPseudos:
 	;
 
 PseudoElementSelector hidden():
-	doubleSemiColon?=':'? pseudo=PseudoElements
+	':' doubleSemiColon?=':'? pseudo=PseudoElements
 	;
 
 enum PseudoElements:
@@ -233,35 +261,12 @@ enum PseudoElements:
 	// validation: warning if "legacy" pseudo-element is used with only a single semi-colon
 
 LanguagePseudoClassSelector hidden():
-	'lang(' langugageId=IDENT ')'
+	':' 'lang' '(' langugageId=IDENT ')'
 	;
 	// validation: language matches /\w+(-\w+)?/
 
 FunctionalPseudoClassSelector hidden():
-	pseudo=FunctionalPseudoClasses '(' argument=TypeArgument ')'
-	;
-
-TypeArgument hidden(WS):
-	  ConstantArgument
-	| LinearArgument
-	| {ParityArgument} parity=Parities
-	;
-
-LinearArgument hidden(WS):
-	coefficient=Coefficient ( constantSign=('-'|'+')? constant=INT )?
-	;
-
-Coefficient hidden():	// separate rule to control whitespace
-	{Coefficient}
-	sign=('-'|'+')? int=INT? 'n'
-	;
-
-ConstantArgument hidden():	// separate rule to control whitespace
-	sign=('-'|'+')? int=INT
-	;
-
-enum Parities:
-	odd | even
+	':' pseudo=FunctionalPseudoClasses '(' argument=TypeArgument ')'
 	;
 
 enum FunctionalPseudoClasses:
@@ -271,8 +276,38 @@ enum FunctionalPseudoClasses:
 	| onlyOfType='only-of-type'
 	;
 
+TypeArgument hidden(WS):
+	  ParityArgument
+	| LinearArgument
+	| ConstantArgument
+//	| {TokensArgument} token=IDENT ('+')
+	;
+
+LinearArgument hidden(WS):
+	{LinearArgument}
+	coefficient=Coefficient ( constantSign=('-'|'+')? constant=INT )?
+	;
+
+Coefficient hidden():	// separate rule to control whitespace
+	  ident=IDENT
+	| {Coefficient} int=INT? 'n'
+	;
+	// TODO  validation on ident
+
+ConstantArgument hidden():	// separate rule to control whitespace
+	sign=('-'|'+')? int=INT
+	;
+
+ParityArgument:
+	parity=Parities
+	;
+
+enum Parities:
+	odd | even
+	;
+
 NegationSelector hidden():
-	':not(' simpleSelector=NegationSimpleSelector ')'
+	':' 'not(' simpleSelector=NegationSimpleSelector ')'
 	;
 
 NegationSimpleSelector returns SimpleSelector:	// synthetic type to limit choice for parser, without need for validation
@@ -292,7 +327,7 @@ NegationSimpleSelector returns SimpleSelector:	// synthetic type to limit choice
  */
 
 ValueLiteral:
-	NumberLiteral | StringLiteral | ColorLiteral | URLLiteral | BareWordLiteral
+	NumberLiteral | StringLiteral | ColorLiteral | URLLiteral | BareWordLiteral | AlphaLiteral
 	;
 
 NumberLiteral hidden():
@@ -318,6 +353,7 @@ ComponentColorLiteral:
 	  {ComponentRGBColor}		'rgb'  '(' red=NumberLiteral ',' green=NumberLiteral ',' blue=NumberLiteral ')'
 	| {ComponentRGBAlphaColor}	'rgba' '(' red=NumberLiteral ',' green=NumberLiteral ',' blue=NumberLiteral ',' opacity=NumberLiteral ')'
 	| {ComponentHSLColor}		'hsl'  '(' hue=NumberLiteral ',' saturation=NumberLiteral ',' lightness=NumberLiteral ')'
+	| {ComponentHSLAlphaColor}	'hsla' '(' hue=NumberLiteral ',' saturation=NumberLiteral ',' lightness=NumberLiteral ',' opacity=NumberLiteral ')'
 	;
 	// validation on ComponentRGBColor:
 	//	either all percentages (with correct range, and non-optional % for 0[.0]), or all dimension-less integers 0-255
@@ -339,6 +375,11 @@ URLLiteral:
 BareWordLiteral:
 	bareWord=IDENT
 	;
+
+AlphaLiteral:
+	'alpha' '(' 'opacity' '=' opacity=NumberLiteral ')'
+	;
+	// TODO  add validation
 
 
 /*
@@ -372,9 +413,9 @@ terminal URL: 'url(' -> ')' ;
 	 */
 	// TODO  validation on url itself
 
-terminal INT returns ecore::EInt: ('-')? DEC_DIGIT+ ;
+terminal INT returns ecore::EInt: DEC_DIGIT+ ;
 
-terminal DECIMAL returns ecore::EDouble: ('-')? DEC_DIGIT+ '.' DEC_DIGIT+ ;
+terminal DECIMAL returns ecore::EDouble: ('-')? DEC_DIGIT* '.' DEC_DIGIT+ ;
 
 terminal fragment HEX_DIGIT: '0'..'9' | 'a'..'f' | 'A'..'F' ;
 

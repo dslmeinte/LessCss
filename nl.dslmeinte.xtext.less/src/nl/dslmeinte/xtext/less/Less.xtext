@@ -6,17 +6,20 @@ generate less "http://www.dslmeinte.nl/xtext/less"
 
 
 LessFile:
-	( '@charset' charSet=STRING )?
-//	imports+=ImportDeclaration*
-	statements+=Statement*
+	( '@charset' charSet=STRING ';' )?
+	imports+=ImportDeclaration*
+	statements+=LessStatement*
 	;
 
-Statement:
-	(VariableDefinition ';') | ExtendedRuleSet | VisibleComment | ImportDeclaration
+LessStatement:
+	  (VariableDefinition ';')
+	| ExtendedRuleSet
+	| VisibleComment
+	| {LessOtherTopLevelDeclaration} declaration=CSSOtherTopLevelDeclaration	// TODO  getting rid of the extra indirection would be nice...
 	;
 
 VariableDefinition:
-	name=VariableDeclaration ':' value=ValueExpression
+	name=VariableDeclaration ':' valuesLists=PropertyExpressionsLists
 	;
 
 VariableDeclaration:
@@ -27,9 +30,6 @@ VisibleComment:
 	comment=ML_COMMENT
 	;
 
-ImportDeclaration:
-	'@import' importURI=STRING
-	;
 	// TODO  tweak ImportUriGlobalScopeProvider to check on the importURI's extension and behave accordingly
 	// TODO  make compatible with CSS def.
 
@@ -40,7 +40,7 @@ ImportDeclaration:
  * +-----------+
  */
 
-ExtendedRuleSet:
+ExtendedRuleSet hidden(WS, SL_COMMENT, ML_COMMENT):		// ML_COMMENT hidden means that inline comments aren't going to be processable...
 	selectors+=Selector (',' selectors+=Selector)*
 	( '(' ( parameters+=Parameter (',' parameters+=Parameter )* )? ')' )?
 	'{'
@@ -110,7 +110,7 @@ KnownPropertyExpressiveDeclaration:
 	;
 
 UnrecognizedPropertyExpressiveDeclaration:
-	name=IDENT ':' valuesLists=PropertyExpressionsLists
+	name=PropertyName ':' valuesLists=PropertyExpressionsLists
 	;
 
 PropertyExpressionsLists:
@@ -159,9 +159,11 @@ PrimaryValueExpression returns ValueExpression:
 	| VariableReference
 	| {ArgumentsReference} '@arguments'
 	| {CSSLiteral}			value=ValueLiteral
-	| {EscapedLiteral}		value=ESCAPED_VALUE
+	| {EscapedLiteral}		value=EscapedValue
 	| {JavascriptLiteral}	value=JAVASCRIPT_EVAL
 	;
+
+EscapedValue: '~' (STRING|JAVASCRIPT_EVAL) ;
 
 ColorFunctionCall:
 	  {TwoArgsFunctionCall} function=TwoArgsColorFunctions	'(' color=ValueExpression ',' modifier=NumberLiteral ')'
@@ -195,8 +197,16 @@ ComponentColorLiteral:
 	  {ComponentRGBColor}		'rgb'  '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ')'
 	| {ComponentRGBAlphaColor}	'rgba' '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ',' opacity=ValueExpression ')'
 	| {ComponentHSLColor}		'hsl'  '(' hue=ValueExpression ',' saturation=ValueExpression ',' lightness=ValueExpression ')'
+	| {ComponentHSLAlphaColor}	'hsla' '(' hue=ValueExpression ',' saturation=ValueExpression ',' lightness=ValueExpression ',' opacity=ValueExpression ')'
 	;
 	// TODO  validation (requires evaluation engine)
+
+// re-def. from CSS grammar to make ti possible to use expressions:
+AlphaLiteral:
+	'alpha' '(' 'opacity' '=' opacityExpr=ValueExpression ')'
+	;
+	// TODO  add validation (requires evaluation engine)
+	// TODO  why can't we name the attribute 'opacity'? (it's possible for ComponentColorLiteral!)
 
 
 /*
@@ -209,8 +219,6 @@ terminal SL_COMMENT : '//' !('\n'|'\r')* ('\r'? '\n')?;
 
 terminal AT_ID: '@' PREFIXABLE_ID_START ID_PART* ;
 	// LessValueConverterService#AT_ID takes care of removing the @
-
-terminal ESCAPED_VALUE: '~' -> ( ';' | '}' ) ;
 
 terminal JAVASCRIPT_EVAL: '`' -> '`' ;
 
