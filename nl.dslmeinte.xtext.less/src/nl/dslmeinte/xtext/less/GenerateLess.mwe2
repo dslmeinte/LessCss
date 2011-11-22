@@ -64,7 +64,7 @@ Workflow {
             fragment = scoping.ImportURIScopingFragment {
             	generateStub = false
             }
-            fragment = nl.dslmeinte.xtext.CorrectedSimpleNamesFragment {}
+            fragment = exporting.SimpleNamesFragment {}
 
             fragment = builder.BuilderIntegrationFragment {}
 
