@@ -13,8 +13,8 @@ Require-Bundle: nl.dslmeinte.xtext.css,
  org.eclipse.xtext.ui.junit,
  org.junit4,
  org.eclipse.ui.workbench;resolution:=optional,
- org.eclipse.xtext.xbase.lib;bundle-version="2.1.0",
- org.eclipse.xtext.xtend2.lib;bundle-version="2.1.0"
+ org.eclipse.xtext.xbase.lib;bundle-version="2.1.1",
+ org.eclipse.xtext.xtend2.lib;bundle-version="2.1.1"
 Import-Package: org.apache.log4j,
  org.apache.commons.logging
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
