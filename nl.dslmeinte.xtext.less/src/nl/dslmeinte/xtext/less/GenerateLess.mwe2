@@ -11,8 +11,6 @@ var runtimeProject = "../${projectName}"
 
 Workflow {
 
-	component = @nl.dslmeinte.xtext.css.GenerateCSS {}
-
     bean = StandaloneSetup {
         scanClassPath = true
         platformUri = "${runtimeProject}/.."

@@ -1,0 +1,9 @@
+module nl.dslmeinte.xtext.less.GenerateLess
+
+Workflow {
+
+	component = @nl.dslmeinte.xtext.css.GenerateCSS {}
+	component = @nl.dslmeinte.xtext.less.GenerateLess {}
+
+}
+
