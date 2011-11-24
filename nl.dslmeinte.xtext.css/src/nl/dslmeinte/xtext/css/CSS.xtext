@@ -45,13 +45,22 @@ CSSOtherTopLevelDeclaration:
 	;
 
 ImportDeclaration:
-	'@import' importURI=(STRING|URL) ( media+=IDENT (',' media+=IDENT)* )? ';'
+	'@import' (importURI=STRING | url=URL) ( media+=IDENT (',' media+=IDENT)* )? ';'
 	;
 
 MediaDeclaration:
-	'@media' media+=IDENT (',' media+=IDENT)* '{' ruleSets+=RuleSet* '}'
+	'@media' mediaQueries+=MediaQuery (',' media+=MediaQuery)* '{' ruleSets+=RuleSet* '}'
 	;
 	// TODO  add media queries
+
+MediaQuery:
+	  ( only?='only' | not?='not' )? mediaType=IDENT ('and' expressions+=MediaQueryExpression)*
+	| expressions+=MediaQueryExpression ('and' expressions+=MediaQueryExpression)*
+	;
+
+MediaQueryExpression:
+	'(' feature=IDENT (':' expression=ValueLiteral)? ')'
+	;
 
 PageDeclaration:
 	'@page' (':' pseudoPage=IDENT)? body=RuleSetBody
@@ -100,7 +109,7 @@ UnrecognizedPropertyDeclaration:
 	;
 
 PropertyName:
-	IDENT | 'empty'		// TODO  add other keywords here
+	IDENT | 'empty' | 'alpha'		// TODO  add other keywords here (possibly through generation)
 	;
 
 PropertyValuesLists:
@@ -332,7 +341,7 @@ ValueLiteral:
 
 NumberLiteral hidden():
 	( {IntegerLiteral} int=INT | {DecimalLiteral} decimal=DECIMAL )
-	dimension=Dimensions?
+	(dimension=Dimensions ('/' lineHeight=NumberLiteral)?)?
 	;
 
 enum Dimensions:

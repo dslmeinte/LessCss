@@ -5,6 +5,7 @@ import java.io.FileInputStream
 import org.eclipse.emf.ecore.resource.Resource$Diagnostic
 import org.eclipse.emf.ecore.util.Diagnostician
 import org.eclipse.xtext.junit.AbstractXtextTests
+import org.eclipse.xtext.EcoreUtil2
 
 /**
  * Support class (which ought to be abstract) to help with unit testing files,
@@ -24,6 +25,7 @@ class XtextTestsSupport extends AbstractXtextTests {
 		val input = new FileInputStream(file)
 		val eObject = getModelAndExpect(input, AbstractXtextTests::UNKNOWN_EXPECTATION)
 		val resource = eObject.eResource
+		EcoreUtil2::resolveAll(resource)
 
 		for( e : resource.errors ) {
 			e.print("error")
