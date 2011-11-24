@@ -1,4 +1,4 @@
-module nl.dslmeinte.xtext.less.GenerateLess
+module nl.dslmeinte.xtext.less.GenerateLessCSS
 
 Workflow {
 
