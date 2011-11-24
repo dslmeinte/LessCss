@@ -7,6 +7,7 @@ import org.eclipse.emf.ecore.EReference
 import org.eclipse.xtext.scoping.IScope
 import org.eclipse.xtext.scoping.Scopes
 import org.eclipse.xtext.scoping.impl.AbstractDeclarativeScopeProvider
+import nl.dslmeinte.xtext.less.less.MixinCall
 
 // TODO  use AbstractDeclarateAnnotationBasedScopeProvider?
 class LessScopeProvider extends AbstractDeclarativeScopeProvider {
@@ -22,5 +23,17 @@ class LessScopeProvider extends AbstractDeclarativeScopeProvider {
 		Scopes::scopeFor(lessFile.mixinCandidates, [ it | it.qNameMixin ], IScope::NULLSCOPE)
 	}
 	// TODO  make this recursive and built up a hierarchy of scopes, reflecting nesting
+
+	def IScope scope_MixinCall_ruleSet(MixinCall mixinCall, EReference ref) {
+		/*
+		 * MixinCall
+		 * 	<- ChainedRuleSetMemberWrapper.member (as SemiColonSeparatedExtendedRuleSetMember)
+		 * 		<- ChainedRuleSetMemberWrapper.next
+		 * 		<- ExtendedRuleSet.firstMemberWrapper
+		 * 			<- ExtendedRuleSet.member
+		 * 			<- LessFile.statements (as LessStatement)
+		 */
+		 throw new RuntimeException("not yet implemented!")
+	}
 
 }
