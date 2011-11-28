@@ -208,6 +208,12 @@ AlphaLiteral:
 	// TODO  add validation (requires evaluation engine)
 	// TODO  why can't we name the attribute 'opacity'? (it's possible for ComponentColorLiteral!)
 
+// re-def. to exclude /-notation for line heights in font sizes:
+NumberLiteral hidden():
+	( {IntegerLiteral} int=INT | {DecimalLiteral} decimal=DECIMAL )
+	dimension=Dimensions?
+	;
+
 
 /*
  * +-----------+
