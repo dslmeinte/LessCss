@@ -1,6 +1,7 @@
 grammar nl.dslmeinte.xtext.less.Less with nl.dslmeinte.xtext.css.CSS hidden(WS, SL_COMMENT)
 
 import "http://www.dslmeinte.nl/xtext/css" as css
+	// note: warning can be ignored - see https://bugs.eclipse.org/bugs/show_bug.cgi?id=364522, happens from Xtext 2.1(.1) onwards
 
 generate less "http://www.dslmeinte.nl/xtext/less"
 
@@ -158,9 +159,13 @@ PrimaryValueExpression returns ValueExpression:
 	| ColorFunctionCall
 	| VariableReference
 	| {ArgumentsReference} '@arguments'
-	| {CSSLiteral}			value=ValueLiteral
+	| {CSSLiteral}			value=CSSLiteral
 	| {EscapedLiteral}		value=EscapedValue
 	| {JavascriptLiteral}	value=JAVASCRIPT_EVAL
+	;
+
+CSSLiteral returns css::ValueLiteral:
+	SizeLiteral | StringLiteral | ColorLiteral | URLLiteral // | FunctionCallLiteral  | BareWordLiteral
 	;
 
 EscapedValue: '~' (STRING|JAVASCRIPT_EVAL) ;
@@ -201,18 +206,12 @@ ComponentColorLiteral:
 	;
 	// TODO  validation (requires evaluation engine)
 
-// re-def. from CSS grammar to make ti possible to use expressions:
+// re-def. from CSS grammar to make it possible to use expressions:
 AlphaLiteral:
 	'alpha' '(' 'opacity' '=' opacityExpr=ValueExpression ')'
 	;
 	// TODO  add validation (requires evaluation engine)
 	// TODO  why can't we name the attribute 'opacity'? (it's possible for ComponentColorLiteral!)
-
-// re-def. to exclude /-notation for line heights in font sizes:
-NumberLiteral hidden():
-	( {IntegerLiteral} int=INT | {DecimalLiteral} decimal=DECIMAL )
-	dimension=Dimensions?
-	;
 
 
 /*

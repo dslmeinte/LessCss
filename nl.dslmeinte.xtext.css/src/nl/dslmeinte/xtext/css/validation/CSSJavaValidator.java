@@ -3,11 +3,11 @@ package nl.dslmeinte.xtext.css.validation;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import nl.dslmeinte.xtext.css.css.ColorComponentLiteral;
 import nl.dslmeinte.xtext.css.css.ComponentHSLColor;
 import nl.dslmeinte.xtext.css.css.ComponentRGBColor;
 import nl.dslmeinte.xtext.css.css.CssPackage;
 import nl.dslmeinte.xtext.css.css.DecimalLiteral;
-import nl.dslmeinte.xtext.css.css.Dimensions;
 import nl.dslmeinte.xtext.css.css.IntegerLiteral;
 import nl.dslmeinte.xtext.css.css.LanguagePseudoClassSelector;
 import nl.dslmeinte.xtext.css.css.NumberLiteral;
@@ -31,24 +31,25 @@ public class CSSJavaValidator extends AbstractCSSJavaValidator {
 
 	@Check
 	public void checkComponentRGBColor(ComponentRGBColor componentRGBColor) {
-		boolean percentage = componentRGBColor.getRed().getDimension() == Dimensions.PERC;
+		boolean percentage = componentRGBColor.getRed().isPercentage();
 		checkRGBComponent(componentRGBColor, ePackage.getComponentRGBColor_Red(), percentage);
 		checkRGBComponent(componentRGBColor, ePackage.getComponentRGBColor_Green(), percentage);
 		checkRGBComponent(componentRGBColor, ePackage.getComponentRGBColor_Blue(), percentage);
 	}
 
 	private void checkRGBComponent(ComponentRGBColor componentRGBColor, EStructuralFeature feature, boolean percentage) {
-		NumberLiteral value = (NumberLiteral) componentRGBColor.eGet(feature);
+		ColorComponentLiteral value = (ColorComponentLiteral) componentRGBColor.eGet(feature);
 		if( percentage ) {
 			checkPercentage(value, feature);
 		} else {
-			if( value.eIsSet(ePackage.getNumberLiteral_Dimension()) ) {
-				error("must be dimension-less", feature);
+			if( value.isPercentage() ) {
+				error("cannot be a percentage", feature);
 			}
-			if( value instanceof DecimalLiteral ) {
+			NumberLiteral number = value.getNumber();
+			if( number instanceof DecimalLiteral ) {
 				error("must be an integer", feature);
 			} else {
-				int intValue = ((IntegerLiteral) value).getInt();
+				int intValue = ((IntegerLiteral) number).getInt();
 				if( !(0 <= intValue && intValue <= 255) ) {
 					error("must be in the range 0-255", feature);
 				}
@@ -56,10 +57,9 @@ public class CSSJavaValidator extends AbstractCSSJavaValidator {
 		}
 	}
 
-	private void checkPercentage(NumberLiteral value, EStructuralFeature feature) {
-		if( value.getDimension() != Dimensions.PERC ) {
+	private void checkPercentage(ColorComponentLiteral value, EStructuralFeature feature) {
+		if( !value.isPercentage() ) {
 			error("must be a percentage", feature);
-			// TODO  can %  be optional for 0 (or 0.0)
 		}
 		if( value instanceof IntegerLiteral ) {
 			int intValue = ((IntegerLiteral) value).getInt();
@@ -83,7 +83,7 @@ public class CSSJavaValidator extends AbstractCSSJavaValidator {
 	}
 
 	private void checkHSLComponent(ComponentHSLColor componentHSLColor, EStructuralFeature feature) {
-		NumberLiteral value = (NumberLiteral) componentHSLColor.eGet(feature);
+		ColorComponentLiteral value = (ColorComponentLiteral) componentHSLColor.eGet(feature);
 		checkPercentage(value, feature);
 	}
 

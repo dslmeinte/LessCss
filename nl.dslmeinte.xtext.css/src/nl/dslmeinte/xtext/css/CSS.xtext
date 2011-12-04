@@ -49,9 +49,12 @@ ImportDeclaration:
 	;
 
 MediaDeclaration:
-	'@media' mediaQueries+=MediaQuery (',' media+=MediaQuery)* '{' ruleSets+=RuleSet* '}'
+	'@media' mediaQueries+=MediaQuery (',' media+=MediaQuery)* '{' members+=MediaDeclarationMembers* '}'
 	;
-	// TODO  add media queries
+
+MediaDeclarationMembers:
+	RuleSet | ( PropertyDeclaration ';' )
+	;
 
 MediaQuery:
 	  ( only?='only' | not?='not' )? mediaType=IDENT ('and' expressions+=MediaQueryExpression)*
@@ -335,13 +338,22 @@ NegationSimpleSelector returns SimpleSelector:	// synthetic type to limit choice
  * +---------------------+
  */
 
+// TODO  transform this into another expression sub language to deal with all the peculiarities (e.g. concatenation of bare words has higher precedence than juxtaposition with commas?)
+
 ValueLiteral:
-	NumberLiteral | StringLiteral | ColorLiteral | URLLiteral | BareWordLiteral | AlphaLiteral
+	SizeLiteral | StringLiteral | ColorLiteral | URLLiteral | FunctionCallLiteral // | BareWordLiteral
 	;
 
-NumberLiteral hidden():
+NumberLiteral:
 	( {IntegerLiteral} int=INT | {DecimalLiteral} decimal=DECIMAL )
-	(dimension=Dimensions ('/' lineHeight=NumberLiteral)?)?
+	;
+
+SizeLiteral hidden():
+	(
+		  ({QuantifiedSizeLiteral} number=NumberLiteral dimension=Dimensions?)
+		| ({QualifiedSizeLiteral} bareword=IDENT)
+	)
+	('/' {FontHeightLiteral.fontHeight=current} lineHeight=NumberLiteral lineHeightDimension=Dimensions?)?
 	;
 
 enum Dimensions:
@@ -359,10 +371,10 @@ ColorLiteral:
 	;
 
 ComponentColorLiteral:
-	  {ComponentRGBColor}		'rgb'  '(' red=NumberLiteral ',' green=NumberLiteral ',' blue=NumberLiteral ')'
-	| {ComponentRGBAlphaColor}	'rgba' '(' red=NumberLiteral ',' green=NumberLiteral ',' blue=NumberLiteral ',' opacity=NumberLiteral ')'
-	| {ComponentHSLColor}		'hsl'  '(' hue=NumberLiteral ',' saturation=NumberLiteral ',' lightness=NumberLiteral ')'
-	| {ComponentHSLAlphaColor}	'hsla' '(' hue=NumberLiteral ',' saturation=NumberLiteral ',' lightness=NumberLiteral ',' opacity=NumberLiteral ')'
+	  {ComponentRGBColor}		'rgb'  '(' red=ColorComponentLiteral ',' green=ColorComponentLiteral ',' blue=ColorComponentLiteral ')'
+	| {ComponentRGBAlphaColor}	'rgba' '(' red=ColorComponentLiteral ',' green=ColorComponentLiteral ',' blue=ColorComponentLiteral ',' opacity=ColorComponentLiteral ')'
+	| {ComponentHSLColor}		'hsl'  '(' hue=ColorComponentLiteral ',' saturation=ColorComponentLiteral ',' lightness=ColorComponentLiteral ')'
+	| {ComponentHSLAlphaColor}	'hsla' '(' hue=ColorComponentLiteral ',' saturation=ColorComponentLiteral ',' lightness=ColorComponentLiteral ',' opacity=ColorComponentLiteral ')'
 	;
 	// validation on ComponentRGBColor:
 	//	either all percentages (with correct range, and non-optional % for 0[.0]), or all dimension-less integers 0-255
@@ -370,6 +382,10 @@ ComponentColorLiteral:
 	//	see ComponentRGBColor + opacity is a dimension-less number between 0.0 and 1.0
 	// validation on ComponentHSLColor:
 	//	all percentages (with correct range, and non-optional % for 0[.0])
+
+ColorComponentLiteral hidden():
+	number=NumberLiteral percentage?='%'?
+	;
 
 enum ColorNames:
 	black | white // | ...
@@ -385,8 +401,9 @@ BareWordLiteral:
 	bareWord=IDENT
 	;
 
-AlphaLiteral:
-	'alpha' '(' 'opacity' '=' opacity=NumberLiteral ')'
+FunctionCallLiteral:
+	  function=IDENT '(' ( arguments+=ValueLiteral (',' arguments+=ValueLiteral)*)? ')'
+	| {AlphaLiteral} 'alpha' '(' 'opacity' '=' opacity=NumberLiteral ')'
 	;
 	// TODO  add validation
 
