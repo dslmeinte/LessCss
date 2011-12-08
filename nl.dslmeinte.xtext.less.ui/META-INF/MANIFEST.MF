@@ -21,5 +21,6 @@ Import-Package: nl.dslmeinte.xtext.css.services,
  org.apache.log4j
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Export-Package: nl.dslmeinte.xtext.less.ui.contentassist.antlr,
- nl.dslmeinte.xtext.less.ui.internal
+ nl.dslmeinte.xtext.less.ui.internal,
+ nl.dslmeinte.xtext.less.ui.contentassist
 Bundle-Activator: nl.dslmeinte.xtext.less.ui.internal.LessActivator

@@ -1,12 +1,10 @@
 package nl.dslmeinte.xtext.less
 
 import com.google.inject.Inject
-import java.util.ArrayList
 import nl.dslmeinte.xtext.css.css.ClassSelector
 import nl.dslmeinte.xtext.css.css.IDSelector
 import nl.dslmeinte.xtext.less.less.ExtendedRuleSet
 import nl.dslmeinte.xtext.less.less.LessFile
-import nl.dslmeinte.xtext.less.less.RuleSetMember
 import nl.dslmeinte.xtext.less.less.SimpleSelectorSequence
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.xtext.naming.IQualifiedNameConverter
@@ -14,7 +12,7 @@ import org.eclipse.xtext.naming.IQualifiedNameConverter
 class LessLanguageHelper {
 
 	def mixinCandidates(LessFile it) {
-		ruleSets.filter [canBeMixin]
+		ruleSets.filter[it.canBeMixin]
 	}
 
 	def private canBeMixin(ExtendedRuleSet it) {
@@ -22,7 +20,7 @@ class LessLanguageHelper {
 	}
 
 	def namespaceCandidates(LessFile it) {
-		ruleSets.filter [canBeNamespace]
+		ruleSets.filter[it.canBeNamespace]
 	}
 
 	def private canBeNamespace(ExtendedRuleSet it) {
@@ -80,22 +78,6 @@ class LessLanguageHelper {
 		}
 		// rely on EMF to get 'name' feature:
 		simpleSelector.eGet(simpleSelector.eClass.getEStructuralFeature("name")) as String
-	}
-
-	/**
-	 * Flattens the members of a rule set to a list,
-	 * instead of a maximally-unbalanced tree.
-	 */
-	def private Iterable<RuleSetMember> members(ExtendedRuleSet ruleSet) {
-		val list = new ArrayList<RuleSetMember>();
-
-		var memberWrapper = ruleSet.firstMemberWrapper
-		while( memberWrapper != null ) {
-			list.add(memberWrapper.member)
-			memberWrapper = memberWrapper.next
-		}
-
-		list
 	}
 
 	/**
