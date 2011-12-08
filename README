@@ -2,17 +2,21 @@ Two Eclipse plug-ins which provide editors for CSS3 and Less (http://lesscss.org
 
 Requirements (i.e., developed on, not tested on anything else):
  - Eclipse 3.7.1
- - master:   Xtext 2.0.1 (SR1) with ANTLR stuff
-   Xtext2_1: Xtext 2.1 with ANTLR
+ - Xtext 2.2.0 with ANTLR stuff
 
-Main development branch is actually Xtext2_1, but I'll merge that one
-to master from time to time. I just like to work with Xtext 2.1
-better, mainly because of the Xtend2 version which has nicer closures.
+The 'latestXtext' branch is only meant to update to the latest version
+of Xtext, prior to merging everything to 'master' - in the process
+forcing everyone to update to that version of Xtext as well.
 
-You'll find ZIPs with the Eclipse plug-in JARs for both Xtext 2.0.1
-and Xtext2.1 in the Downloads section. Drop the JARs into the
-'dropins' (or 'plugins', if that doesn't work) directory in your
-Eclipse installation directory and (re-)start your Eclipse.
+You'll find ZIPs with the Eclipse plug-in JARs in the Downloads
+section. Drop the JARs into the 'dropins' (or 'plugins', if that
+doesn't work) directory in your Eclipse installation directory and
+(re-)start your Eclipse. Some of the ZIPs are self-contained, others
+aren't. I'm _not_ keeping the ZIPs really up-to-date with HEAD, so to
+live on the bleeding edge: clone, import into a suitable Eclipse and
+deploy or run the plug-ins yourself.
+
+An p2 update site will be attended to in the future.
 
 Note that these are very much a work-in-progress. I aim to provide
 full implementations for CSS3 and Less. Most work is in the CSS part
