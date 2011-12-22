@@ -2,7 +2,7 @@ Two Eclipse plug-ins which provide editors for CSS3 and Less (http://lesscss.org
 
 Requirements (i.e., developed on, not tested on anything else):
  - Eclipse 3.7.1
- - Xtext 2.2.0 with ANTLR stuff
+ - Xtext 2.2.1 with ANTLR stuff
 
 The 'latestXtext' branch is only meant to update to the latest version
 of Xtext, prior to merging everything to 'master' - in the process
