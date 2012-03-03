@@ -1,0 +1,24 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: nl.dslmeinte.xtext.less.ui
+Bundle-Vendor: DslConsultancy.com
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: nl.dslmeinte.xtext.less.ui; singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: nl.dslmeinte.xtext.less;visibility:=reexport,
+ org.eclipse.xtext.ui,
+ org.eclipse.ui.editors;bundle-version="3.5.0",
+ org.eclipse.ui.ide;bundle-version="3.5.0",
+ org.eclipse.xtext.ui.shared,
+ org.eclipse.ui,
+ org.eclipse.xtext.builder,
+ org.antlr.runtime,
+ org.eclipse.xtext.ui.codetemplates.ui,
+ org.eclipse.compare
+Import-Package: org.apache.commons.logging,
+ org.apache.log4j
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Export-Package: nl.dslmeinte.xtext.less.ui.contentassist.antlr,
+ nl.dslmeinte.xtext.less.ui.internal,
+ nl.dslmeinte.xtext.less.ui.contentassist
+Bundle-Activator: nl.dslmeinte.xtext.less.ui.internal.LessActivator

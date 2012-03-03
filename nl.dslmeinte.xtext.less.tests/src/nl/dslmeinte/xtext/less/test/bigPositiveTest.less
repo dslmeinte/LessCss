@@ -1,0 +1,92 @@
+/*
+ * This file should be a completely valid (both syntactically and w.r.t. validation)
+ * CSS file which serves (in the 1st place) as an early warning mechanism w.r.t. the
+ * implementation of the "Selectors Level 3" part of CSS
+ * (see: http://www.w3.org/TR/css3-selectors).
+ *
+ * Various aspects of parsing and validation should be checked in more detail
+ * by unit tests, both positive and negative. 
+ */
+
+/* ¤5. Groups of selectors */
+
+h1 { font-family: sans-serif }
+h2 { font-family: sans-serif }
+h3 { font-family: sans-serif }
+
+h1, h2, h3 { font-family: sans-serif }
+
+
+/* ¤6.1. Type selector */
+
+h1 {}
+
+/* ¤6.1.1. Type selectors and namespace */
+
+@namespace foo url(http://www.example.com);
+foo|h1 { color: blue }  /* first rule */
+foo|* { color: yellow } /* second rule */
+|h1 { color: red }      /* ...*/
+*|h1 { color: green }
+h1 { color: green }
+
+/* ¤6.2. Universal selector */
+
+*[hreflang|=en], [hreflang|=en] {}
+*.warning, .warning {}
+*#myid, #myid {}
+
+/* ¤6.3.1. Attribute presence and value selectors */
+
+h1[title] {}
+span[class="example"] {}
+span[hello="Cleveland"][goodbye="Columbus"] {}
+a[rel~="copyright"] {}
+a[href="http://www.w3.org/"] {}
+a[hreflang=fr] {}
+a[hreflang|="en"] {}
+DIALOGUE[character=romeo] {}
+DIALOGUE[character=juliet] {}
+
+/* ¤6.3.2. Substring matching attribute selectors */
+
+object[type^="image/"] {}
+a[href$=".html"] {}
+p[title*="hello"] {}
+
+/* ¤6.3.3. Attribute selectors and namespaces */
+
+@namespace foo "http://www.example.com";
+[foo|att=val] { color: blue }
+[*|att] { color: yellow }
+[|att] { color: green }
+[att] { color: green }
+
+/* ¤6.4. Class selectors */
+
+*.pastoral { color: green }  /* all elements with class~=pastoral */
+.pastoral { color: green }  /* all elements with class~=pastoral */
+p.pastoral.marine { color: green }
+
+/* ¤6.5. ID selectors */
+
+h1#chapter1 {}
+#chapter1 {}
+*#z98y {}
+
+/* ¤6.6.1.1. The link pseudo-classes: :link and :visited */
+
+a.external:visited {}
+
+/* ¤6.6.1.2. The user action pseudo-classes :hover, :active, and :focus */
+
+a:link    /* unvisited links */ {}
+a:visited /* visited links */ {}
+a:hover   /* user hovers */ {}
+a:active  /* active links */ {}
+
+a:focus {}
+a:focus:hover {}
+
+/* ¤6.6.2. The target pseudo-class :target */
+
