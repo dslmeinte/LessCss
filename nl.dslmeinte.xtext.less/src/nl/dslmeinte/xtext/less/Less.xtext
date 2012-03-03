@@ -1,7 +1,6 @@
 grammar nl.dslmeinte.xtext.less.Less with nl.dslmeinte.xtext.css.CSS hidden(WS, SL_COMMENT)
 
 import "http://www.dslmeinte.nl/xtext/css" as css
-	// note: warning can be ignored - see https://bugs.eclipse.org/bugs/show_bug.cgi?id=364522, happens from Xtext 2.1(.1) onwards
 
 generate less "http://www.dslmeinte.nl/xtext/less"
 

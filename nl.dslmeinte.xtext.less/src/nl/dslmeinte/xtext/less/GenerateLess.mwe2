@@ -14,7 +14,6 @@ Workflow {
     bean = StandaloneSetup {
         scanClassPath = true
         platformUri = "${runtimeProject}/.."
-        registerGenModelFile = "platform:/resource/nl.dslmeinte.xtext.css/src-gen/nl/dslmeinte/xtext/css/CSS.genmodel"
     }
 
     component = DirectoryCleaner {
@@ -23,6 +22,20 @@ Workflow {
 
     component = DirectoryCleaner {
         directory = "${runtimeProject}.ui/src-gen"
+    }
+
+    component = Generator {
+        pathRtProject = runtimeProject
+        pathUiProject = "${runtimeProject}.ui"
+        pathTestProject = "${runtimeProject}.tests"
+        projectNameRt = projectName
+        projectNameUi = "${projectName}.ui"
+        language = {
+            uri = "classpath:/nl/dslmeinte/xtext/css/CSS.xtext"
+            fragment = grammarAccess.GrammarAccessFragment {}
+            fragment = ecore.EcoreGeneratorFragment {}
+            fragment = serializer.SerializerFragment {}
+        }
     }
 
     component = Generator {

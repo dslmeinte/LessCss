@@ -3,7 +3,8 @@ package nl.dslmeinte.xtext.less.test
 import java.io.File
 import nl.dslmeinte.xtext.less.LessStandaloneSetup
 import nl.dslmeinte.xtext.test.util.XtextTestsSupport
-import org.junit.Assert
+
+import static junit.framework.Assert.*
 
 /**
  * Parses all CSS test files in the cloudhead/less.js repository,
@@ -26,15 +27,18 @@ class AllLessJsLessTests extends XtextTestsSupport {
 		) {
 			println("parsing " + file.name + ":")
 			val result = test(file)
-//			if( file.name != 'colors.css' ) {
+			if( file.name != 'colors.less' ) {
 				success = success && result
-//			}
+			}
 			println("")
 			println("")
 		}
-		if( !success ) {
-			Assert::fail("there were syntactic/semantic errors")
-		}
+		assertTrue("there were syntactic/semantic errors", success)
+	}
+
+	def void test_imports() {
+		val file = new File("lessjs-less-tests/import.less")
+		assertTrue("there were syntactic/semantic errors", test(file))
 	}
 
 }
