@@ -31,20 +31,6 @@ Workflow {
         projectNameRt = projectName
         projectNameUi = "${projectName}.ui"
         language = {
-            uri = "classpath:/nl/dslmeinte/xtext/css/CSS.xtext"
-            fragment = grammarAccess.GrammarAccessFragment {}
-            fragment = ecore.EcoreGeneratorFragment {}
-            fragment = serializer.SerializerFragment {}
-        }
-    }
-
-    component = Generator {
-        pathRtProject = runtimeProject
-        pathUiProject = "${runtimeProject}.ui"
-        pathTestProject = "${runtimeProject}.tests"
-        projectNameRt = projectName
-        projectNameUi = "${projectName}.ui"
-        language = {
 
             uri = grammarURI
             fileExtensions = file.extensions

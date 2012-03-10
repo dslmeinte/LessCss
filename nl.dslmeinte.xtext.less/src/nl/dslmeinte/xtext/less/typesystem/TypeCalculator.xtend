@@ -1,8 +1,8 @@
 package nl.dslmeinte.xtext.less.typesystem
 
-import nl.dslmeinte.xtext.less.less.ValueExpression
 import nl.dslmeinte.xtext.less.less.CSSLiteral
-import nl.dslmeinte.xtext.css.css.ValueLiteral
+import nl.dslmeinte.xtext.less.less.ValueExpression
+import nl.dslmeinte.xtext.less.less.ValueLiteral
 
 class TypeCalculator {
 
