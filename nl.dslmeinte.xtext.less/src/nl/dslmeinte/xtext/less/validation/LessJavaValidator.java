@@ -1,8 +1,8 @@
 package nl.dslmeinte.xtext.less.validation;
 
-import nl.dslmeinte.xtext.css.css.AttributeSelector;
-import nl.dslmeinte.xtext.css.css.StringAttributeValueLiteral;
-import nl.dslmeinte.xtext.css.css.StringLiteral;
+import nl.dslmeinte.xtext.less.less.AttributeSelector;
+import nl.dslmeinte.xtext.less.less.StringAttributeValueLiteral;
+import nl.dslmeinte.xtext.less.less.StringLiteral;
 
 import org.eclipse.xtext.validation.Check;
 

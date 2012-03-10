@@ -1,9 +1,9 @@
 package nl.dslmeinte.xtext.less
 
 import com.google.inject.Inject
-import nl.dslmeinte.xtext.css.css.ClassSelector
-import nl.dslmeinte.xtext.css.css.IDSelector
+import nl.dslmeinte.xtext.less.less.ClassSelector
 import nl.dslmeinte.xtext.less.less.ExtendedRuleSet
+import nl.dslmeinte.xtext.less.less.IDSelector
 import nl.dslmeinte.xtext.less.less.LessFile
 import nl.dslmeinte.xtext.less.less.SimpleSelectorSequence
 import org.eclipse.emf.ecore.EObject

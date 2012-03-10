@@ -4,8 +4,9 @@ import java.io.File
 import java.io.FileInputStream
 import org.eclipse.emf.ecore.resource.Resource$Diagnostic
 import org.eclipse.emf.ecore.util.Diagnostician
-import org.eclipse.xtext.junit.AbstractXtextTests
 import org.eclipse.xtext.EcoreUtil2
+import org.eclipse.xtext.junit.AbstractXtextTests
+import org.junit.Assert
 import org.junit.Ignore
 
 /**
@@ -26,6 +27,9 @@ class XtextTestsSupport extends AbstractXtextTests {
 	def test(File file) {
 		val input = new FileInputStream(file)
 		val eObject = getModelAndExpect(input, AbstractXtextTests::UNKNOWN_EXPECTATION)
+		if( eObject == null ) {
+			Assert::fail("null model")
+		}
 		val resource = eObject.eResource
 		EcoreUtil2::resolveAll(resource)
 

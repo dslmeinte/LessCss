@@ -1,8 +1,22 @@
-grammar nl.dslmeinte.xtext.less.Less with nl.dslmeinte.xtext.css.CSS hidden(WS, SL_COMMENT)
+/**
+ * Grammar for Less - by Meinte Boersma (http://www.dslconsultancy.com/, http://dslmeinte.wordpress.com/).
+ * 
+ * The specification of the CSS3 language can be found from: http://www.w3.org/TR/CSS/
+ * 
+ * This implementation does not completely comply with the W3C specification, since
+ * it's a work-in-progress. Notable global aspects that are missing:
+ * 
+ * 	- complete compliance with respect to lexical scanning (tokenization)
+ *  - media queries
+ * 
+ * It is my intention to generate this grammar partially from a CSS definition.
+ */
 
-import "http://www.dslmeinte.nl/xtext/css" as css
+grammar nl.dslmeinte.xtext.less.Less hidden(WS, ML_COMMENT)
 
 generate less "http://www.dslmeinte.nl/xtext/less"
+
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
 
 
 LessFile:
@@ -11,11 +25,48 @@ LessFile:
 	statements+=LessStatement*
 	;
 
+ImportDeclaration:
+	'@import' (importURI=STRING | url=URL) ( media+=IDENT (',' media+=IDENT)* )? ';'
+	;
+
 LessStatement:
 	  (VariableDefinition ';')
 	| ExtendedRuleSet
 	| VisibleComment
 	| {LessOtherTopLevelDeclaration} declaration=CSSOtherTopLevelDeclaration	// TODO  getting rid of the extra indirection would be nice...
+	;
+
+CSSOtherTopLevelDeclaration:
+	MediaDeclaration | PageDeclaration | NamespaceDeclaration | FontFaceDeclaration
+	;
+
+MediaDeclaration:
+	'@media' mediaQueries+=MediaQuery (',' media+=MediaQuery)* '{' members+=MediaDeclarationMembers* '}'
+	;
+
+MediaDeclarationMembers:
+	RuleSet | ( PropertyDeclaration ';' )
+	;
+
+MediaQuery:
+	  ( only?='only' | not?='not' )? mediaType=IDENT ('and' expressions+=MediaQueryExpression)*
+	| expressions+=MediaQueryExpression ('and' expressions+=MediaQueryExpression)*
+	;
+
+MediaQueryExpression:
+	'(' feature=IDENT (':' expression=ValueLiteral)? ')'
+	;
+
+PageDeclaration:
+	'@page' (':' pseudoPage=IDENT)? body=RuleSetBody
+	;
+
+NamespaceDeclaration:
+	'@namespace' name=IDENT? url=(STRING|URL) ';'
+	;
+
+FontFaceDeclaration:
+	'@font-face' body=RuleSetBody	// TODO  make this more specific for @font-face
 	;
 
 VariableDefinition:
@@ -40,6 +91,61 @@ VisibleComment:
  * +-----------+
  */
 
+RuleSet:
+	selectors+=Selector (',' selectors+=Selector)* // ~ selectors_group
+	body=RuleSetBody
+	;
+	/*
+	 * Note that this grammar is a little wider than the specification allows,
+	 * since whitespace following a Selector is hidden.
+	 */
+
+RuleSetBody:
+	{RuleSetBody}
+	'{'
+		(
+			declarations+=PropertyDeclaration (';' declarations+=PropertyDeclaration)* (';')?
+		)?
+	'}'
+	;
+	/**
+	 * Note that this grammar is a little wider than the specification allows,
+	 * since a closing semi-colon is not considered illegal (which it is in the strict sense).
+	 */
+
+PropertyDeclaration:
+	KnownPropertyDeclaration | UnrecognizedPropertyDeclaration
+	;
+
+KnownPropertyDeclaration:
+	name=KnownProperties ':' valuesLists=PropertyValuesLists
+	;
+
+UnrecognizedPropertyDeclaration:
+	name=PropertyName ':' valuesLists=PropertyValuesLists
+	;
+
+PropertyName:
+	IDENT | 'empty' | 'alpha'		// TODO  add other keywords here (possibly through generation)
+	;
+
+PropertyValuesLists:
+	lists+=PropertyValuesList (',' lists+=PropertyValuesList)*
+	;
+
+PropertyValuesList:
+	values+=PropertyValue+
+	;
+
+PropertyValue hidden(WS):
+	value=ValueLiteral important?='!important'?
+	;
+
+enum KnownProperties:
+	color | border_top='border-top' // | ..
+	;
+	// TODO  generate into this grammar to provide content assist/code completion
+
 ExtendedRuleSet hidden(WS, SL_COMMENT, ML_COMMENT):		// ML_COMMENT hidden means that inline comments aren't going to be processable...
 	selectors+=Selector (',' selectors+=Selector)*
 	( '(' ( parameters+=Parameter (',' parameters+=Parameter )* )? ')' )?
@@ -58,20 +164,6 @@ ExtendedRuleSet hidden(WS, SL_COMMENT, ML_COMMENT):		// ML_COMMENT hidden means 
 	 * 
 	 * Use LessLanguageHelper#members(ExtendedRuleSet) to obtain a linear list.
 	 */
-
-// re-def. of the rule from the CSS grammar, to incorporate the ParentCombinator
-SimpleSelectorSequence hidden():
-	  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=TailSimpleSelector* )
-	| (                                           simpleSelectors+=TailSimpleSelector+ )
-	;
-
-TailSimpleSelector returns css::SimpleSelector:	// synthetic type to limit choice for parser, without need for validation
-	IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector | ParentCombinator
-	;
-
-ParentCombinator returns css::SimpleSelector:
-	{ParentCombinator} '&'
-	;
 
 Parameter:
 	variable=VariableDeclaration (':' defaultValue=ValueExpression)?
@@ -127,6 +219,204 @@ PropertyExpression hidden(WS):
 
 
 /*
+ * +-----------+
+ * | Selectors |
+ * +-----------+
+ * 
+ * Specification: http://www.w3.org/TR/css3-selectors
+ */
+
+Selector:
+	CombinatorExpression
+	;
+
+CombinatorExpression returns Selector hidden():		// TODO  add ML_COMMENTS
+	SimpleSelectorSequence (
+		  {DescendantCombinator.left=current}		wsI=WS					right=SimpleSelectorSequence
+		| {ChildCombinator.left=current}			wsL=WS? '>' wsR=WS?		right=SimpleSelectorSequence
+		| {AdjacentSiblingCombinator.left=current}	wsL=WS? '+' wsR=WS?		right=SimpleSelectorSequence
+		| {GeneralSiblingCombinator.left=current}	wsL=WS? '~' wsR=WS?		right=SimpleSelectorSequence
+	)*
+	;
+	/*
+	 * The parse tree from a CombinatorExpression will always yield a linked list
+	 * (maximally-unbalanced, right-sided tree), but this way it's easier to
+	 * assign the specific combinator and surrounding whitespace so that the object
+	 * is re-serializable.
+	 */
+
+SimpleSelectorSequence hidden():
+	  ( head=( TypeSelector | UniversalSelector ) simpleSelectors+=TailSimpleSelector* )
+	| (                                           simpleSelectors+=TailSimpleSelector+ )
+	;
+
+TailSimpleSelector returns SimpleSelector:	// synthetic type to limit choice for parser, without need for validation
+	IDSelector | AttributeSelector | ClassSelector | PseudoSelector | NegationSelector | ParentCombinator
+	;
+
+ParentCombinator returns SimpleSelector:
+	{ParentCombinator} '&'
+	;
+
+SimpleSelector:		// convenience super type
+	  TypeSelector
+	| UniversalSelector
+	| AttributeSelector
+	| IDSelector
+	| ClassSelector
+	| PseudoSelector
+	| NegationSelector
+	;
+
+TypeSelector:
+	(namespacePrefix=NamespacePrefix)? type=IDENT
+	;
+	// validation: check (warning) whether type is a known HTML element
+	/*
+	 * We don't want to know about all HTML elements since each element's name
+	 * would become a keyword in the language, so we'd have to quote them
+	 * explicitly at numerous spots.
+	 */
+
+NamespacePrefix:
+	  ( {NamespacePrefix} namespace=[NamespaceDeclaration|IDENT] | {UniversalNamespacePrefix} '*' ) '|'
+	| {WithoutNamespacePrefix} '|'
+	;
+
+UniversalSelector:
+	{UniversalSelector} (namespacePrefix=NamespacePrefix)? '*'
+	;
+
+AttributeSelector hidden(WS):
+	'['
+		attribute=Attribute ( matcher=AttributeSelectorMatchers value=AttributeValueLiteral )?	// !matcher.eIsSet means: AttributePresenceSelector
+	']'
+	;
+	// TODO  try to find a solution which has better hierarchy (e.g., AttributeValueSelector and AttributePresenceSelector)
+
+Attribute hidden():
+	(namespacePrefix=NamespacePrefix)? name=IDENT
+	;
+
+enum AttributeSelectorMatchers:
+	  prefix='^='
+	| suffix='$='
+	| substring='*='
+	| exact='='		// TODO  check name
+	| includes='~='
+	| language='|='	// TODO  check name
+	;
+
+AttributeValueLiteral:
+	  {StringAttributeValueLiteral} value=(IDENT|STRING)
+	| {IntegerAttributeValueLiteral} value=INT
+	| {DecimalAttributeValueLiteral} value=DECIMAL
+	;
+	// TODO  check whether this complies with CSS def.!
+
+IDSelector:
+	name=(HASH_ID|HEX_COLOR)	// RGB_COLOR has priority but is otherwise subsumed by HASH_ID
+	;
+
+ClassSelector:
+	name=DOT_ID
+	;
+
+PseudoSelector:
+	(
+		  NoArgsPseudoClassSelector
+		| PseudoElementSelector
+		| LanguagePseudoClassSelector
+		| FunctionalPseudoClassSelector
+	)
+	;
+
+NoArgsPseudoClassSelector hidden():
+	':' pseudo=NoArgsPseudos
+	;
+
+enum NoArgsPseudos:
+	  link | visited
+	| hover | active | focus
+	| target
+	| enabled | disabled | checked | indeterminate
+	| root
+	| firstChild='first-child' | lastChild='last-child'
+    | onlyChild='only-child'
+    | empty
+	;
+
+PseudoElementSelector hidden():
+	':' doubleSemiColon?=':'? pseudo=PseudoElements
+	;
+
+enum PseudoElements:
+	  firstLetter='first-letter' | firstLine='first-line'
+	| before | after
+	;
+	// validation: warning if "legacy" pseudo-element is used with only a single semi-colon
+
+LanguagePseudoClassSelector hidden():
+	':' 'lang' '(' langugageId=IDENT ')'
+	;
+	// validation: language matches /\w+(-\w+)?/
+
+FunctionalPseudoClassSelector hidden():
+	':' pseudo=FunctionalPseudoClasses '(' argument=TypeArgument ')'
+	;
+
+enum FunctionalPseudoClasses:
+	  nthChild='nth-child' | nthLastChild='nth-last-child'
+	| nthOfType='nth-of-type' | nthLastOfType='nth-last-if-type'
+	| firstOfType='first-of-type' | lastOfType='last-of-type'
+	| onlyOfType='only-of-type'
+	;
+
+TypeArgument hidden(WS):
+	  ParityArgument
+	| LinearArgument
+	| ConstantArgument
+//	| {TokensArgument} token=IDENT ('+')
+	;
+
+LinearArgument hidden(WS):
+	{LinearArgument}
+	coefficient=Coefficient ( constantSign=('-'|'+')? constant=INT )?
+	;
+
+Coefficient hidden():	// separate rule to control whitespace
+	  ident=IDENT
+	| {Coefficient} int=INT? 'n'
+	;
+	// TODO  validation on ident
+
+ConstantArgument hidden():	// separate rule to control whitespace
+	sign=('-'|'+')? int=INT
+	;
+
+ParityArgument:
+	parity=Parities
+	;
+
+enum Parities:
+	odd | even
+	;
+
+NegationSelector hidden():
+	':' 'not(' simpleSelector=NegationSimpleSelector ')'
+	;
+
+NegationSimpleSelector returns SimpleSelector:	// synthetic type to limit choice for parser, without need for validation
+	  TypeSelector
+	| UniversalSelector
+	| AttributeSelector
+	| IDSelector
+	| ClassSelector
+	| PseudoSelector
+	;
+
+
+/*
  * +-------------------+
  * | Value expressions |
  * +-------------------+
@@ -151,7 +441,7 @@ MultiplicativeExpression returns ValueExpression:
 enum MultiplicativeOperators:
 	mult='*' | div='/'
 	;
-	// (note that a '%' modulo operator would cause non-LL(*) behavior in combination with the % dimension in (css::)NumberLiteral)
+	// (note that a '%' modulo operator would cause non-LL(*) behavior in combination with the % dimension in NumberLiteral)
 
 PrimaryValueExpression returns ValueExpression:
 	  '(' ValueExpression ')'
@@ -163,14 +453,14 @@ PrimaryValueExpression returns ValueExpression:
 	| {JavascriptLiteral}	value=JAVASCRIPT_EVAL
 	;
 
-CSSLiteral returns css::ValueLiteral:
+CSSLiteral returns ValueLiteral:
 	SizeLiteral | StringLiteral | ColorLiteral | URLLiteral // | FunctionCallLiteral  | BareWordLiteral
 	;
 
 EscapedValue: '~' (STRING|JAVASCRIPT_EVAL) ;
 
 ColorFunctionCall:
-	  {TwoArgsFunctionCall} function=TwoArgsColorFunctions	'(' color=ValueExpression ',' modifier=NumberLiteral ')'
+	  {TwoArgsFunctionCall} function=TwoArgsColorFunctions	'(' color=ValueExpression ',' modifier=SizeLiteral ')'
 	| {OneArgFunctionCall}	function=OneArgColorFunctions	'(' color=ValueExpression ')'
 	;
 	// TODO  validation (requires evaluation engine)
@@ -196,7 +486,6 @@ VariableReference hidden():
 	// scoping:
 	//   - mimic nesting of rule sets
 
-// re-def. from CSS grammar to make it possible to use expressions:
 ComponentColorLiteral:
 	  {ComponentRGBColor}		'rgb'  '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ')'
 	| {ComponentRGBAlphaColor}	'rgba' '(' red=ValueExpression ',' green=ValueExpression ',' blue=ValueExpression ',' opacity=ValueExpression ')'
@@ -204,13 +493,72 @@ ComponentColorLiteral:
 	| {ComponentHSLAlphaColor}	'hsla' '(' hue=ValueExpression ',' saturation=ValueExpression ',' lightness=ValueExpression ',' opacity=ValueExpression ')'
 	;
 	// TODO  validation (requires evaluation engine)
+	// validation on ComponentRGBColor:
+	//	either all percentages (with correct range, and non-optional % for 0[.0]), or all dimension-less integers 0-255
+	// validation on ComponentRGBAlphaColor:
+	//	see ComponentRGBColor + opacity is a dimension-less number between 0.0 and 1.0
+	// validation on ComponentHSLColor:
+	//	all percentages (with correct range, and non-optional % for 0[.0])
 
-// re-def. from CSS grammar to make it possible to use expressions:
 AlphaLiteral:
 	'alpha' '(' 'opacity' '=' opacityExpr=ValueExpression ')'
 	;
 	// TODO  add validation (requires evaluation engine)
 	// TODO  why can't we name the attribute 'opacity'? (it's possible for ComponentColorLiteral!)
+
+
+/*
+ * +---------------------+
+ * | CSS property values |
+ * +---------------------+
+ */
+
+// TODO  transform this into another expression sub language to deal with all the peculiarities (e.g. concatenation of bare words has higher precedence than juxtaposition with commas?)
+
+ValueLiteral:
+	SizeLiteral | StringLiteral | ColorLiteral | URLLiteral | FunctionCallLiteral // | BareWordLiteral
+	;
+
+NumberLiteral:
+	( {IntegerLiteral} int=INT | {DecimalLiteral} decimal=DECIMAL )
+	;
+
+SizeLiteral hidden():
+	(
+		  ({QuantifiedSizeLiteral} => number=NumberLiteral dimension=Dimensions?)
+		| ({QualifiedSizeLiteral} bareword=IDENT)
+	)
+	('/' {FontHeightLiteral.fontHeight=current} lineHeight=NumberLiteral lineHeightDimension=Dimensions?)?
+	;
+
+enum Dimensions:
+	in | cm | mm | pt | pc | em | ex | px | perc='%'
+	;
+
+StringLiteral:
+	value=STRING
+	;
+
+ColorLiteral:
+	  {RGBColor} rgb=HEX_COLOR
+//	| {NamedColor} color=BareWordLiteral
+	| ComponentColorLiteral
+	;
+
+URLLiteral:
+	value=URL
+	;
+
+// something we don't know about:
+BareWordLiteral:
+	bareWord=IDENT
+	;
+
+FunctionCallLiteral:
+	  function=IDENT '(' ( arguments+=ValueLiteral (',' arguments+=ValueLiteral)*)? ')'
+	| {AlphaLiteral} 'alpha' '(' 'opacity' '=' opacity=NumberLiteral ')'
+	;
+	// TODO  add validation
 
 
 /*
@@ -233,4 +581,60 @@ terminal JAVASCRIPT_EVAL: '`' -> '`' ;
 
 // TODO  validation on STRINGs to check whether interpolation syntax is correct
 //			(appear in .value of css::StringLiteral and css::AttributeSelector)
+
+terminal HEX_COLOR: '#' HEX_DIGIT+ ;
+	// validation: exactly 3 or 6 hex-digits
+	// CSSValueConverterService#RGB_COLOR takes care of removing the '#' and validation
+	/*
+	 * Note that this terminal rule must come before the HASH_ID one,
+	 * since the latter subsumes the first.
+	 */
+
+terminal IDENT: ID_START ID_PART* ;
+
+// special terminal for ID..euhmm..id's:
+terminal HASH_ID: '#' PREFIXABLE_ID_START ID_PART* ;
+	// CSSValueConverterService#HASH_ID takes care of removing the '#'
+
+// special terminal for class references:
+terminal DOT_ID: '.' PREFIXABLE_ID_START ID_PART* ;
+	// CSSValueConverterService#DOT_ID takes care of removing the '.'
+
+terminal URL: 'url(' -> ')' ;
+	/*
+	 * CSSValueConverterService#URL takes care of removing the whitespace so that
+	 * the rule effectively becomes: 'url(' WS? .. WS? ')' with WS hidden (transiently)
+	 */
+	// TODO  validation on url itself
+
+terminal INT returns ecore::EInt: DEC_DIGIT+ ;
+
+terminal DECIMAL returns ecore::EDouble: ('-')? DEC_DIGIT* '.' DEC_DIGIT+ ;
+
+terminal fragment HEX_DIGIT: '0'..'9' | 'a'..'f' | 'A'..'F' ;
+
+terminal fragment DEC_DIGIT: '0'..'9' ;
+
+terminal fragment ID_PART: ('a'..'z'|'A'..'Z'|'_'|'-'|'0'..'9') ;
+
+terminal fragment ID_START: PREFIXABLE_ID_START | '-';
+
+terminal fragment PREFIXABLE_ID_START: ('a'..'z'|'A'..'Z'|'_') ;
+
+terminal STRING	: // copied from common.Terminals grammar
+			'"' ( '\\' ('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|'"') )* '"' |
+			"'" ( '\\' ('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|"'") )* "'"
+		;
+
+terminal ML_COMMENT	: '/*' -> '*/' ; // copied from common.Terminals grammar
+
+terminal WS			: (' '|'\t'|'\r'|'\n')+ ;	// TODO  add '\f' without causing Xtext generation problems
+
+
+/*
+ * Roadmap:
+ * 
+ * 	1) W3C compliant lexing
+ *  2) W3C specification harvesting -> generate into grammar
+ */
 

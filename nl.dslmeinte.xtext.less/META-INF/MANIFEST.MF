@@ -33,11 +33,4 @@ Export-Package: nl.dslmeinte.xtext.less,
  nl.dslmeinte.xtext.less.scoping,
  nl.dslmeinte.xtext.less.generator,
  nl.dslmeinte.xtext.less.formatting,
- nl.dslmeinte.xtext.less.parser.antlr.lexer,
- nl.dslmeinte.xtext.css,
- nl.dslmeinte.xtext.css.services,
- nl.dslmeinte.xtext.css.css,
- nl.dslmeinte.xtext.css.css.impl,
- nl.dslmeinte.xtext.css.css.util,
- nl.dslmeinte.xtext.css.serializer
-
+ nl.dslmeinte.xtext.less.parser.antlr.lexer

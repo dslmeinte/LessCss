@@ -1,12 +1,8 @@
-Two Eclipse plug-ins which provide editors for CSS3 and Less (http://lesscss.org/).
+Two Eclipse plug-ins which provide editors for Less (http://lesscss.org/).
 
 Requirements (i.e., developed on, not tested on anything else):
  - Eclipse 3.7.1
  - Xtext 2.2.1 with ANTLR stuff
-
-The 'latestXtext' branch is only meant to update to the latest version
-of Xtext, prior to merging everything to 'master' - in the process
-forcing everyone to update to that version of Xtext as well.
 
 You'll find ZIPs with the Eclipse plug-in JARs in the Downloads
 section. Drop the JARs into the 'dropins' (or 'plugins', if that
@@ -18,32 +14,21 @@ deploy or run the plug-ins yourself.
 
 An p2 update site will be attended to in the future.
 
-Note that these are very much a work-in-progress. I aim to provide
-full implementations for CSS3 and Less. Most work is in the CSS part
-as Less extends CSS but not by much...  which isn't to say those
-extensions aren't really useful - they are! In the end, I also intend
-to implement the mapping of Less -> CSS. This is not particularly
-difficult, just tedious in the face of all the details of CSS.
-
-Currently, the CSS3 plug-in doesn't really know all that much about
-CSS3 beyond some core syntax, so don't expect it to know about
-specific HTML elements/types and CSS properties, m'kay? By extension,
-the same goes for Less. I hope the syntax checking, highlighting and
-minimal validation already provides some convenience.
+Note that these are very much a work-in-progress. I don't aim to
+provide a full implementation of CSS3, but only of the part that's
+relevant to Less - in particular, the (extended) selectors.
 
 If you're interested in helping to further develop this, fork at
 will. I have some specific ideas on how to go from here, so don't
-expect me to always accept a pull request verbatim.  To give an idea,
+expect me to always accept a pull request verbatim. To give an idea,
 here's a rough TODO list:
 
 - having more unit tests would be a good idea ;-)
 - full compliance with CSS3 lexical scanning
-- full implementation of CSS3 validation (e.g., validating RGB literals) - mostly done, methinks
-- full implementation of CSS3 property syntax, using single-shot DSL and generation of part of the grammar
+- implementation of "generic" CSS3 property values but with expressions
 - type system implementation for Less
 - implementation of Less imports
 - nicer syntax highlighting for both CSS and Less
-- nice formatting for CSS (and Less)
 - evaluation engine for Less (expressions)
 - mapping of Less -> CSS (model-2-model transformation)
 - builder integration of Less -> CSS, using serialization
