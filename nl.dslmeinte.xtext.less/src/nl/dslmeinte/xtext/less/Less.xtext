@@ -460,7 +460,7 @@ CSSLiteral returns ValueLiteral:
 EscapedValue: '~' (STRING|JAVASCRIPT_EVAL) ;
 
 ColorFunctionCall:
-	  {TwoArgsFunctionCall} function=TwoArgsColorFunctions	'(' color=ValueExpression ',' modifier=NumberLiteral ')'
+	  {TwoArgsFunctionCall} function=TwoArgsColorFunctions	'(' color=ValueExpression ',' modifier=SizeLiteral ')'
 	| {OneArgFunctionCall}	function=OneArgColorFunctions	'(' color=ValueExpression ')'
 	;
 	// TODO  validation (requires evaluation engine)
